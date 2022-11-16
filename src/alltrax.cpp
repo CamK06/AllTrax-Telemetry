@@ -1,15 +1,81 @@
 #include "alltrax.h"
+#include <thread>
 
 #define ALLTRAX_VID 0x23D4
-#define ALLTRAX_PID 0x0001 // Might also be 2 
+// This PID might also be 2, the original code uses PID to determine whether or not to use checksums
+// If the PID is 1, then checksums are used
+#define ALLTRAX_PID 0x0001 
 
 #include <spdlog/spdlog.h>
 
 namespace Alltrax
 {
 
+hid_device* motorController = nullptr;
+mcu_receive_callback_t rxCallback = nullptr;
+bool readThreadRunning = false;
+std::thread readThread;
+
+bool initMotorController()
+{
+    // Warn the user if the receive callback has not been set
+    if(rxCallback == nullptr)
+        spdlog::warn("Receive callback is not set! No data will be received from the motor controller!");
+
+    spdlog::info("Searching for motor controller...");
+    hid_init();
+
+    // Attempt to open the motor controller based on its VID and PID
+    motorController = hid_open(ALLTRAX_VID, ALLTRAX_PID, NULL);
+    if(!motorController) {
+        hid_exit();
+        return false;
+    }
+
+    // Motor controller was found, log and return true
+    spdlog::info("Motor controller opened successfully");
+    return true;
+}
+
+void read_worker()
+{
+    unsigned char* dataIn = new unsigned char[64];
+    while(readThreadRunning) {
+        hid_read(motorController, dataIn, 64); // This may need to be 65 bytes or some other number
+        rxCallback(dataIn, 64);
+    }
+}
+
+void beginRead()
+{
+    // Begin the read thread
+    readThread = std::thread(&read_worker);
+    readThreadRunning = true;
+}
+
+void endRead()
+{
+    // Clean up the read thread
+    readThreadRunning = false;
+    if(readThread.joinable())
+        readThread.join();
+}
+
+void cleanup()
+{
+    endRead();
+}
+
+void setReceiveCallback(mcu_receive_callback_t callback) { rxCallback = callback; }
+
+/*
++---------------+
+|OLD LIBUSB CODE|
++---------------+
+
 bool libUsbInitialized = false;
-libusb_device* motorController = nullptr;
+libusb_device* motorControllerDev = nullptr;
+libusb_device_handle* motorController = nullptr;
 
 void initializeLibUSB()
 {
@@ -23,14 +89,35 @@ void initializeLibUSB()
 void openMotorController()
 {
     // If libUSB has not been initialized or we have not found a motor controller
-    if(!libUsbInitialized || motorController == nullptr) {
+    if(!libUsbInitialized || motorControllerDev == nullptr) {
         spdlog::error("Cannot open motor controller:");
         spdlog::error("libUSB not initialized or motor controller not found");
         return;
     }
 
+    // Open the motor controller 
     spdlog::info("Opening motor controller...");
-    // TODO: Implement.
+    int result = libusb_open(motorControllerDev, &motorController);
+    if(result == 0)
+        return;
+
+    // If this is reached, the motor controller failed to open
+    switch(result)
+    {
+        case LIBUSB_ERROR_NO_MEM:
+            spdlog::error("Failed open motor controller! Out of memory.");
+            break;
+        case LIBUSB_ERROR_ACCESS:
+            spdlog::error("Failed open motor controller! Access denied.");
+            break;
+        case LIBUSB_ERROR_NO_DEVICE:
+            spdlog::error("Failed to open motor controller! Device not found.");
+            break;
+        default:
+            spdlog::error("Failed to open motor controller! Unknown error.");
+            break;
+    }
+    exit(-1);
 }
 
 bool findMotorController()
@@ -59,7 +146,7 @@ bool findMotorController()
             // We've found the controller, open it then free the device list
             spdlog::info("Motor controller found!");
             spdlog::debug("Device: {}\nBus: {}", i, libusb_get_bus_number(device));
-            motorController = device;
+            motorControllerDev = device;
             openMotorController();
             libusb_free_device_list(devices, 1);
             return true;
@@ -91,5 +178,6 @@ void libUSBLogCB(libusb_context *ctx, enum libusb_log_level level, const char* s
             break;
     }
 }
+*/
 
 }
