@@ -1,4 +1,5 @@
 #include "alltrax.h"
+#include "alltraxmem.h"
 #include <thread>
 
 #define ALLTRAX_VID 0x23D4
@@ -15,6 +16,7 @@ hid_device* motorController = nullptr;
 mcu_receive_callback_t rxCallback = nullptr;
 bool readThreadRunning = false;
 std::thread readThread;
+bool useChecksum = true;
 
 bool initMotorController()
 {
@@ -32,12 +34,60 @@ bool initMotorController()
         return false;
     }
 
-    // Motor controller was found, log and return true
+    // Reset the controller
     spdlog::info("Motor controller opened successfully");
+    unsigned char data[1] = { 0x3 };
+    int result = hid_write(motorController, data, 1);
+    if(result == -1) {
+        spdlog::error("Failed to reset motor controller");
+        return false;
+    }
+
     return true;
 }
 
-void read_worker()
+void sendData(char reportID, uint addressFunction, char* data, char length)
+{
+    // Properly format the address function
+    char address[4] = {
+        0, 0, 0, (char)addressFunction
+    };
+    address[0] = (char)(addressFunction/256u/256/256);
+    address[1] = (char)(addressFunction/256u/256u);
+    address[2] = (char)(addressFunction/256u);
+
+    // Build the packet to send
+    char* packet = new char[64];
+    for(int i = 0; i < 64; i++)
+        packet[i] = 0x00;
+    packet[0] = reportID;
+    packet[1] = length;
+    for(int i = 0; i < 4; i++)
+        packet[4+i] = address[i];
+
+    if(useChecksum) {
+        int num = (int)(packet[0] + packet[1]);
+        for(int i = 4; i < 64; i++)
+            num += (int)packet[i];
+        packet[2] = (char)num;
+        packet[3] = (char)num;
+    }
+
+    // Add data to the packet
+    for(int i = 0; i < length; i++)
+        packet[i+1] = data[i];
+
+    // Send the packet
+    hid_write(motorController, (const unsigned char*)packet, 64);
+}
+
+bool getInfo()
+{
+    // TODO: Implement
+    return false;
+}
+
+void readWorker()
 {
     unsigned char* dataIn = new unsigned char[64];
     while(readThreadRunning) {
@@ -49,7 +99,7 @@ void read_worker()
 void beginRead()
 {
     // Begin the read thread
-    readThread = std::thread(&read_worker);
+    readThread = std::thread(&readWorker);
     readThreadRunning = true;
 }
 

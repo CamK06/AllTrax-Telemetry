@@ -1,7 +1,6 @@
 #pragma once
 
 #include <spdlog/spdlog.h>
-// #include <libusb-1.0/libusb.h>
 #include <hidapi/hidapi.h>
 
 typedef void (*mcu_receive_callback_t)(unsigned char* data, size_t len);
@@ -13,7 +12,9 @@ void setReceiveCallback(mcu_receive_callback_t callback);
 bool initMotorController();
 void beginRead();
 void endRead();
-void read_worker();
+void readWorker();
+bool getInfo();
+void sendData(char reportID, char* addressFunction, char* data, char length);
 void cleanup();
 
 // Old libUSB code
