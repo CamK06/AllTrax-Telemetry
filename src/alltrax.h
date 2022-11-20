@@ -13,8 +13,9 @@ bool initMotorController();
 void beginRead();
 void endRead();
 void readWorker();
+bool readAddress(uint32_t addr, uint numBytes, char** outData);
 bool getInfo();
-void sendData(char reportID, char* addressFunction, char* data, char length);
+bool sendData(char reportID, char* addressFunction, char** outData, char length);
 void cleanup();
 
 // Old libUSB code

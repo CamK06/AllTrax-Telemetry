@@ -30,20 +30,23 @@ int main()
 	spdlog::info("HIDAPI " HID_API_VERSION_STR);
 	spdlog::set_level(spdlog::level::debug);
 
+	Alltrax::getInfo();
+	return 0;
+
 	// Find and initialize the motor controller
-	Alltrax::setReceiveCallback(receive_callback);
-	if(!Alltrax::initMotorController()) {
-		spdlog::error("No motor controller found!");
-		spdlog::error("Quitting...");
-		return -1;
-	}
+	//Alltrax::setReceiveCallback(receive_callback);
+	//if(!Alltrax::initMotorController()) {
+	//	spdlog::error("No motor controller found!");
+	//	spdlog::error("Quitting...");
+	//	return -1;
+	//}
 
 	// Begin reading data from the controller
-	Alltrax::beginRead();
+	//Alltrax::beginRead();
 
-	while(true);
+	//while(true);
 
 	// Clean up and exit
-	Alltrax::cleanup();
-	return 0;
+	//Alltrax::cleanup();
+	//return 0;
 }

@@ -3,7 +3,7 @@
 #include <cstring>
 #include <cstdint>
 
-namespace AllTraxVars
+namespace AlltraxVars
 {
 
 typedef struct memUint32
@@ -27,7 +27,7 @@ typedef struct memInt16
 typedef struct memString
 {
     char* text;
-    size_t len;
+    int len;
     uint32_t addr;
 } memString;
 
