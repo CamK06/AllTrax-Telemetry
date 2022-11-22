@@ -3,9 +3,7 @@
 #include <thread>
 
 #define ALLTRAX_VID 0x23D4
-// This PID might also be 2, the original code uses PID to determine whether or not to use checksums
-// If the PID is 1, then checksums are used
-#define ALLTRAX_PID 0x0001 
+#define ALLTRAX_PID 0x0001 // This is 1 on our controller 
 
 #include <spdlog/spdlog.h>
 
