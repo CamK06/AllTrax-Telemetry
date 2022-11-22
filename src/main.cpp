@@ -32,21 +32,4 @@ int main()
 
 	Alltrax::getInfo();
 	return 0;
-
-	// Find and initialize the motor controller
-	//Alltrax::setReceiveCallback(receive_callback);
-	//if(!Alltrax::initMotorController()) {
-	//	spdlog::error("No motor controller found!");
-	//	spdlog::error("Quitting...");
-	//	return -1;
-	//}
-
-	// Begin reading data from the controller
-	//Alltrax::beginRead();
-
-	//while(true);
-
-	// Clean up and exit
-	//Alltrax::cleanup();
-	//return 0;
 }

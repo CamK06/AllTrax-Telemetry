@@ -2,6 +2,7 @@
 
 #include <spdlog/spdlog.h>
 #include <hidapi/hidapi.h>
+#include "alltraxvars.h"
 
 typedef void (*mcu_receive_callback_t)(unsigned char* data, size_t len);
 
@@ -18,8 +19,6 @@ bool getInfo();
 bool sendData(char reportID, char* addressFunction, char** outData, char length);
 void cleanup();
 
-// Old libUSB code
-//void initializeLibUSB();
-//void libUSBLogCB(libusb_context *ctx, enum libusb_log_level level, const char* str);
-
+bool readVars(Var* vars, int varCount);
+bool readVar(Var var);
 }

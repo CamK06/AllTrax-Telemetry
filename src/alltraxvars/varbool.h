@@ -1,7 +1,7 @@
 #pragma once
 #include "var.h"
 
-class VarBool : protected Var
+class VarBool : public Var
 {
 public:
     VarBool(const char* name, uint32_t addr)

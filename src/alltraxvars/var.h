@@ -48,38 +48,10 @@ protected:
         }
     }
 
-    // Getters
-    const char* getName() { return (const char*)_name; }
-    const char* getUnitLabel() { return (const char*)_unitLabel; }
-    VarType getType() { return this->_type; }
-    int getNumBytes() { return this->_numBytes; }
-    int getArrayLen() { return this->_arrayLen; }
-    long getMinVal() { return this->_minVal; }
-    long getMaxVal() { return this->_maxVal; }
-    int getMachineOffset() { return this->_machineOffset; }
-    double getConvertVal() { return this->_convertVal; }
-    uint32_t getAddr() { return this->_addr; }
-    long* getValue() { return this->_val; }
-
     // Setters
     void setMinVal(long minVal) { this->_minVal = minVal; }
     void setMaxVal(long maxVal) { this->_maxVal = maxVal; }
     void setAddress(uint32_t addr) { this->_addr = addr; }
-    void setValue(long* val, int length) { 
-
-        // If there's no valid data to copy, set this->_val to null then return
-        if(val == nullptr || length > this->_arrayLen) {
-            this->_val = nullptr;
-            return;
-        }
-
-        // Replace this->_val with the contents of val
-        if(this->_val != nullptr)
-            delete this->_val;
-        this->_val = new long[length];
-        for(int i = 0; i < length; i++)
-            this->_val[i] = val[i];
-    }
 
     // Functions
     double convertToReal(long value) {
@@ -95,6 +67,37 @@ protected:
         if(num < this->_minVal)
             num = this->_minVal;
         return num;
+    }
+
+public:
+    // Getters
+    const char* getName() { return (const char*)_name; }
+    const char* getUnitLabel() { return (const char*)_unitLabel; }
+    VarType getType() { return this->_type; }
+    long getMinVal() { return this->_minVal; }
+    long getMaxVal() { return this->_maxVal; }
+    int getMachineOffset() { return this->_machineOffset; }
+    double getConvertVal() { return this->_convertVal; }
+    long* getValue() { return this->_val; }
+    int getNumBytes() { return this->_numBytes; }
+    int getArrayLen() { return this->_arrayLen; }
+    uint32_t getAddr() { return this->_addr; }
+
+    // Setters
+    void setValue(long* val, int length) { 
+
+        // If there's no valid data to copy, set this->_val to null then return
+        if(val == nullptr || length > this->_arrayLen) {
+            this->_val = nullptr;
+            return;
+        }
+
+        // Replace this->_val with the contents of val
+        if(this->_val != nullptr)
+            delete this->_val;
+        this->_val = new long[length];
+        for(int i = 0; i < length; i++)
+            this->_val[i] = val[i];
     }
 
 private:

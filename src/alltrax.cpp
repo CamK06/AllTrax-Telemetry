@@ -1,5 +1,4 @@
 #include "alltrax.h"
-#include "alltraxmem.h"
 #include "alltraxvars.h"
 #include <thread>
 
@@ -29,24 +28,14 @@ bool initMotorController()
     spdlog::info("Searching for motor controller...");
     hid_init();
 
-    // Attempt to open the motor controller based on its VID and PID
+    // Attempt to open the motor controller from its VID and PID
     motorController = hid_open(ALLTRAX_VID, ALLTRAX_PID, NULL);
     if(!motorController) {
         hid_exit();
         return false;
     }
 
-    // Reset the controller
-    spdlog::info("Motor controller opened successfully");
-    unsigned char data[1] = { 0x3 };
-    int result = hid_write(motorController, data, 1);
-    if(result == -1) {
-        spdlog::error("Failed to reset motor controller");
-        return false;
-    }
-
-    VarBool testVal("What h", 0xffffff);
-    testVal.getValue();
+    getInfo();
 
     return true;
 }
@@ -101,20 +90,110 @@ bool sendData(char reportID, uint addressFunction, unsigned char* data, unsigned
 
 bool getInfo()
 {
-    // Read the motor controller's model
-    // Numbers here are from last var read in GetInfo; HardwareRev
-    // So, TODO: Implement the Var array bullshit the original code does
-    // And implement ReadVars
-    // OR keep this as is and read one by one?
-    // 4 is NumBytes, 1 is ArrayLength
-    uint len = (uint)((ulong)134218800u + (ulong)((long)(4 * 1)));
-
-
-    char* modelName;
-    readAddress(AlltraxVars::modelName.addr, len - AlltraxVars::modelName.addr, &modelName);
-    spdlog::debug("Read model name: {}", modelName);
+    readVars(Vars::infoVars, 9);
 
     return false;
+}
+
+// This entire function is overcommented to hell and back because honestly even I barely understand *why* Alltrax's original software does half of the stuff
+// that it does here, the comments are just my best guesses as why they do what they do, and I'll never remember those guesses without the comments
+bool readVars(Var* vars, int varCount)
+{
+    // Check if we're attempting to read the same variable multiple times
+    // This code kinda sucks but I don't care, it'll be someone elses problem, not mine
+    for(int i = 0; i < varCount; i++) 
+        for(int j = i+1; j < varCount; j++)
+            if(vars[i].getAddr() == vars[j].getAddr())
+                spdlog::warn("Variable '{}' read twice in readVars call", vars[i].getName());
+
+    // Read each variable in vars
+    for(int i = 0; i < varCount; i++) {
+        
+        // Determine the address of the last byte to be read
+        // For single variables this is just the address plus the length in bytes
+        uint lastByte = vars[i].getAddr() + (vars[i].getNumBytes() * vars[i].getArrayLen());
+        int lastVar = 0;
+
+        // For multiple variables, the length parameter is from the current variable to the end of the last, also in bytes
+        // This is calculated in this for loop
+        for(int j = i+1; j < varCount; j++) {
+            // Original Alltrax program skips over null array elements using a while loop here
+            // We don't do that (array should never be null), but I'm leaving this note in case it needs to be added in the future
+
+            // Break if the distance from the end of the current var to the start of the next is >= 20bytes
+            // For some reason this causes the data length to be all weird, it works fine if we use continue instead of break but
+            // that is probably quite incorrect...
+            //if((vars[j].getAddr() - lastByte) >= 20U)
+            //    break;
+            //    continue;
+
+            // Set lastByte to be the last byte of the current variable (this in most cases will be the last variable in the array)
+            lastByte = vars[j].getAddr() + (vars[j].getNumBytes() * vars[j].getArrayLen());
+            lastVar = j;
+        }
+
+        // Read the variable from the controller
+        // We calculate data length on the spot here; (lastByte-vars[i].getAddr())
+        char* dataIn;
+        bool result = readAddress(vars[i].getAddr(), lastByte-vars[i].getAddr(), &dataIn);
+        if(!result) { // Read failed
+            spdlog::error("Failed to read variable '{}' from motor controller!", vars[i].getName());
+            return result;
+        }
+
+        // Parse the read data into appropriate long arrays for Var
+        for(int j = i; j <= lastVar; j++) {
+
+            // Copy read data for this variable into a new array (this makes no sense, the indexing seems all wrong)
+            // NOTE: I'm 90% certain the purpose of this is to fill varData with just the bytes for the current variable determined by the for loop
+            // or in other words, varData should be the bytes from vars[j].address to vars[j].addres+vars[j].arraylength*vars[j].bytes
+            char* varData = new char[vars[j].getArrayLen() * vars[j].getNumBytes()];
+            for(int k = 0; k < vars[j].getArrayLen() * vars[j].getNumBytes(); k++)
+                varData[k] = dataIn[(vars[j].getAddr()-vars[i].getAddr())+k]; // this will PROBABLY segfault... but it's what AllTrax does so ????????
+            long* varValue = new long[vars[j].getArrayLen()];
+
+            // Parse all of the data into appropriate formatting for the long array used by Vars
+            switch(vars[j].getType()) {
+                case VarType::BOOL:
+                    for(int k = 0; k < vars[j].getArrayLen(); k++) {
+                        if(varData[k] == 0)
+                            varValue[k] = 0;
+                        else
+                            varValue[k] = 1;
+                    }
+                    break;
+
+                // Single byte values like 8 bit numbers and strings are just 1:1 mapped
+                case VarType::BYTE:
+                case VarType::SBYTE:
+                case VarType::STRING:
+                    for(int k = 0; k < vars[j].getArrayLen(); k++)
+                        varValue[k] = varData[k];
+                    break;
+
+                case VarType::UINT16:
+                    for(int k = 0; k < vars[j].getArrayLen(); k++)
+                        varValue[k] = (varData[k*2+1] << 8) + varData[k*2];
+                    break;
+
+                // Uint32 and Int32 looked the same in the original program, this *may* however not be the case
+                case VarType::UINT32:
+                case VarType::INT32:
+                    for(int k = 0; k < vars[j].getArrayLen(); k++)
+                        varValue[k] = (long)((varData[k*4+3] << 24) + (varData[k*4+2] << 16) + (varData[k*4+1] << 8) + varData[k*4]);
+                    break;
+            }
+            vars[j].setValue(varValue, vars[j].getArrayLen());
+        }
+        i = lastVar;
+    }
+    return true;
+}
+
+bool readVar(Var var)
+{
+    Var vars[] = { var };
+    return readVars(vars, 1);
 }
 
 bool readAddress(uint32_t addr, uint numBytes, char** outData)

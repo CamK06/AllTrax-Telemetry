@@ -1,7 +1,7 @@
 #pragma once
 #include "var.h"
 
-class VarInt8 : protected Var
+class VarInt8 : public Var
 {
 public:
     VarInt8(const char* name, uint32_t addr, int8_t minVal, int8_t maxVal, double convertVal, int machineOffset, const char* unitLabel)

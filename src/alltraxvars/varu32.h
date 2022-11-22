@@ -1,11 +1,11 @@
 #pragma once
 #include "var.h"
 
-class VarU32 : protected Var
+class VarU32 : public Var
 {
 public:
     VarU32(const char* name, uint32_t addr, uint minVal, uint maxVal, double convertVal, int machineOffset, const char* unitLabel)
-        : Var(name, VarType::INT32, 1, addr, (long)minVal, (long)maxVal, convertVal, machineOffset, unitLabel){}
+        : Var(name, VarType::UINT32, 1, addr, (long)minVal, (long)maxVal, convertVal, machineOffset, unitLabel){}
 
     // Getters
     const char* getUnitLabel() { return Var::getUnitLabel(); }
