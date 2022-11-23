@@ -55,7 +55,7 @@ protected:
 
     // Functions
     double convertToReal(long value) {
-        return (double)(value - this->_machineOffset) * this->_convertVal;
+        return (double)(value - (long)this->_machineOffset) * this->_convertVal;
     }
     long convertToMachine(double value) {
         if(this->_convertVal == 0.0)

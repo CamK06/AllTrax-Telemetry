@@ -5,6 +5,14 @@
 #include "alltraxvars.h"
 
 typedef void (*mcu_receive_callback_t)(unsigned char* data, size_t len);
+struct sensor_data
+{
+	int throttle; 
+	double battVolt;
+	double battCur;
+	double battTemp;
+	double controlTemp;
+};
 
 namespace Alltrax
 {
@@ -14,11 +22,11 @@ bool initMotorController();
 void beginRead();
 void endRead();
 void readWorker();
-bool readAddress(uint32_t addr, uint numBytes, char** outData);
+bool readAddress(uint32_t addr, uint numBytes, unsigned char** outData);
 bool getInfo();
 bool sendData(char reportID, char* addressFunction, char** outData, char length);
 void cleanup();
 
-bool readVars(Var* vars, int varCount);
-bool readVar(Var var);
+bool readVars(Var** vars, int varCount);
+bool readVar(Var* var);
 }

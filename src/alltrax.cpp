@@ -36,7 +36,12 @@ bool initMotorController()
     }
 
     getInfo();
-    spdlog::debug("Controller model: {}", Vars::model.getValue());
+    spdlog::debug("Motor controller model: {}", Vars::model.getValue());
+    spdlog::debug("Motor controller build date: {}", Vars::buildDate.getValue());
+    spdlog::debug("Motor controller serial number: {}", Vars::serialNum.getVal());
+    spdlog::debug("Motor controller boot revision: {}", Vars::bootRev.convertToReal());
+    spdlog::debug("Motor controller program type: {}", Vars::programType.convertToReal());
+    spdlog::debug("Motor controller hardware revision: {}", Vars::hardwareRev.getVal());
 
     return true;
 }
@@ -80,7 +85,6 @@ bool sendData(char reportID, uint addressFunction, unsigned char* data, unsigned
 			printf("\n");
 	}
     printf("\n");
-    return false;
 
     // Send the packet
     int result = hid_write(motorController, packet, 64);
@@ -98,21 +102,21 @@ bool getInfo()
 
 // This entire function is overcommented to hell and back because honestly even I barely understand *why* Alltrax's original software does half of the stuff
 // that it does here, the comments are just my best guesses as why they do what they do, and I'll never remember those guesses without the comments
-bool readVars(Var* vars, int varCount)
+bool readVars(Var** vars, int varCount)
 {
     // Check if we're attempting to read the same variable multiple times
     // This code kinda sucks but I don't care, it'll be someone elses problem, not mine
     for(int i = 0; i < varCount; i++) 
         for(int j = i+1; j < varCount; j++)
-            if(vars[i].getAddr() == vars[j].getAddr())
-                spdlog::warn("Variable '{}' read twice in readVars call", vars[i].getName());
+            if(vars[i]->getAddr() == vars[j]->getAddr())
+                spdlog::warn("Variable '{}' read twice in readVars call", vars[i]->getName());
 
     // Read each variable in vars
     for(int i = 0; i < varCount; i++) {
         
         // Determine the address of the last byte to be read
         // For single variables this is just the address plus the length in bytes
-        uint lastByte = vars[i].getAddr() + (vars[i].getNumBytes() * vars[i].getArrayLen());
+        uint lastByte = vars[i]->getAddr() + (vars[i]->getNumBytes() * vars[i]->getArrayLen());
         int lastVar = 0;
 
         // For multiple variables, the length parameter is from the current variable to the end of the last, also in bytes
@@ -129,34 +133,34 @@ bool readVars(Var* vars, int varCount)
             //    continue;
 
             // Set lastByte to be the last byte of the current variable (this in most cases will be the last variable in the array)
-            lastByte = vars[j].getAddr() + (vars[j].getNumBytes() * vars[j].getArrayLen());
+            lastByte = vars[j]->getAddr() + (vars[j]->getNumBytes() * vars[j]->getArrayLen());
             lastVar = j;
         }
 
         // Read the variable from the controller
         // We calculate data length on the spot here; (lastByte-vars[i].getAddr())
-        char* dataIn;
-        bool result = readAddress(vars[i].getAddr(), lastByte-vars[i].getAddr(), &dataIn);
+        unsigned char* dataIn = new unsigned char[lastByte-vars[i]->getAddr()];
+        bool result = readAddress(vars[i]->getAddr(), lastByte-vars[i]->getAddr(), &dataIn);
         if(!result) { // Read failed
-            spdlog::error("Failed to read variable '{}' from motor controller!", vars[i].getName());
+            spdlog::error("Failed to read variable '{}' from motor controller!", vars[i]->getName());
             return result;
         }
 
         // Parse the read data into appropriate long arrays for Var
-        for(int j = i; j <= lastVar; j++) {
+        for(int j = i; j < lastVar; j++) {
 
             // Copy read data for this variable into a new array (this makes no sense, the indexing seems all wrong)
             // NOTE: I'm 90% certain the purpose of this is to fill varData with just the bytes for the current variable determined by the for loop
             // or in other words, varData should be the bytes from vars[j].address to vars[j].addres+vars[j].arraylength*vars[j].bytes
-            char* varData = new char[vars[j].getArrayLen() * vars[j].getNumBytes()];
-            for(int k = 0; k < vars[j].getArrayLen() * vars[j].getNumBytes(); k++)
-                varData[k] = dataIn[(vars[j].getAddr()-vars[i].getAddr())+k]; // this will PROBABLY segfault... but it's what AllTrax does so ????????
-            long* varValue = new long[vars[j].getArrayLen()];
-
+            char* varData = new char[vars[j]->getArrayLen() * vars[j]->getNumBytes()];
+            for(int k = 0; k < vars[j]->getArrayLen() * vars[j]->getNumBytes(); k++)
+                varData[k] = dataIn[(vars[j]->getAddr()-vars[i]->getAddr())+k]; // this will PROBABLY segfault... but it's what AllTrax does so ????????
+            long* varValue = new long[vars[j]->getArrayLen()];
+            
             // Parse all of the data into appropriate formatting for the long array used by Vars
-            switch(vars[j].getType()) {
+            switch(vars[j]->getType()) {
                 case VarType::BOOL:
-                    for(int k = 0; k < vars[j].getArrayLen(); k++) {
+                    for(int k = 0; k < vars[j]->getArrayLen(); k++) {
                         if(varData[k] == 0)
                             varValue[k] = 0;
                         else
@@ -168,70 +172,79 @@ bool readVars(Var* vars, int varCount)
                 case VarType::BYTE:
                 case VarType::SBYTE:
                 case VarType::STRING:
-                    for(int k = 0; k < vars[j].getArrayLen(); k++)
+                    for(int k = 0; k < vars[j]->getArrayLen(); k++)
                         varValue[k] = varData[k];
                     break;
 
                 case VarType::UINT16:
-                    for(int k = 0; k < vars[j].getArrayLen(); k++)
+                    for(int k = 0; k < vars[j]->getArrayLen(); k++)
                         varValue[k] = (varData[k*2+1] << 8) + varData[k*2];
                     break;
 
                 // Uint32 and Int32 looked the same in the original program, this *may* however not be the case
                 case VarType::UINT32:
                 case VarType::INT32:
-                    for(int k = 0; k < vars[j].getArrayLen(); k++)
+                    for(int k = 0; k < vars[j]->getArrayLen(); k++)
                         varValue[k] = (long)((varData[k*4+3] << 24) + (varData[k*4+2] << 16) + (varData[k*4+1] << 8) + varData[k*4]);
                     break;
             }
-            vars[j].setValue(varValue, vars[j].getArrayLen());
+            vars[j]->setValue(varValue, vars[j]->getArrayLen());
+            delete varValue;
+            delete varData;
         }
         i = lastVar;
     }
     return true;
 }
 
-bool readVar(Var var)
+bool readVar(Var* var)
 {
-    Var vars[] = { var };
+    Var* vars[] = { var };
     return readVars(vars, 1);
 }
 
-bool readAddress(uint32_t addr, uint numBytes, char** outData)
+bool readAddress(uint32_t addr, uint numBytes, unsigned char** outData)
 {
     spdlog::debug("Reading address 0x{0:x} from controller...", addr);
-    *outData = new char[numBytes];
+    spdlog::debug("Bytes to read {}", numBytes);
 
     // Send the data
-    // Not sure why alltrax does this math stuff, but they do so I do it too
-    int num = 0;
-    while((long)(num * 56) < (long)((ulong)numBytes)) {
-        uint num2  = (uint)((ulong)numBytes - (ulong)((long)(num * 56)));
-        if(num2 > 56u)
-            num2 = 56u;
+    int i = 0;
+    while((i * 56) < numBytes) {
+        uint len  = numBytes - (i * 56);
+        if(len > 56u)
+            len = 56u;
+        else if(len <= 0)
+            break;
         
-        bool result = sendData(1, (uint)((ulong)addr + (ulong)((long)(56 * num))), nullptr, num2);
+        bool result = sendData(1, addr + (56 * i), nullptr, len);
         if(!result)
             return result;
         
+        unsigned char buf[65];
+        int bytesRead = hid_read(motorController, buf, 65);
+
         // Read the data
-        for(int i = 0; i < num2; i++)
-            *outData[(num*56)+i] = receivedData[i];
-        num++;
+        for(int j = 0; j < bytesRead-8; j++)
+            (*outData)[j+(i*56)] = buf[j+8];
+        i++;
     }
 
-    spdlog::debug("Successfully read {} bytes from {0x{0:x}", numBytes, addr);
+    spdlog::debug("Successfully read {} bytes from 0x{:x}", numBytes, addr);
     return true;
 }
 
 void readWorker()
 {
-    unsigned char* dataIn = new unsigned char[64];
+    unsigned char dataIn[65];
+    spdlog::debug("Started read thread");
     while(readThreadRunning) {
-        hid_read(motorController, dataIn, 64); // This may need to be 65 bytes or some other number
+        hid_read(motorController, dataIn, 65); // This may need to be 65 bytes or some other number
+        spdlog::debug("Got data");
         memcpy(receivedData+8, dataIn, 56); // Copy the data portion of the packet into receivedData
         rxCallback(dataIn, 64);
     }
+    spdlog::debug("Read thread ended");
 }
 
 void beginRead()

@@ -23,6 +23,13 @@ extern VarInt32 originalProgRev;
 extern VarInt32 programType;
 extern VarU16 startUpSwitch;
 extern VarInt32 hardwareRev;
-extern Var infoVars[];
+extern Var* infoVars[];
 
+extern VarInt16 battVoltage;
+extern VarInt16 throttleLocal;
+extern VarInt16 throttlePos;
+extern VarInt32 outputAmps;
+extern VarInt16 battTemp;
+extern VarInt16 mcuTemp;
+extern Var* telemetryVars[];
 }

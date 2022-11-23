@@ -12,7 +12,20 @@ VarInt32 programType("ProgramType", 134218796u, INT32_MIN, INT32_MAX, 1.0, 0, "N
 VarU16 startUpSwitch("StartupSwitch", 134222848u, 0, INT16_MAX, 1.0, 0, "");
 VarInt32 hardwareRev("HardwareRev", 134218800u, INT32_MIN, INT32_MAX, 1.0, 0, "N/A");
 
-Var infoVars[] = {  Vars::model, Vars::buildDate, Vars::serialNum,
-                    Vars::bootRev, Vars::originalBootRev, Vars::originalProgRev,
-                    Vars::programType, Vars::startUpSwitch, Vars::hardwareRev };
+// Sensors
+VarInt16 battVoltage("BPlus_Volts", 536887568u, INT16_MIN, INT16_MAX, 0.1, 0, "V");
+VarInt16 throttleLocal("Throttle_Local", 536887574u, INT16_MIN, INT16_MAX, 1.0, 0, "N/A");
+VarInt16 throttlePos("Throttle_Position", 536887576u, INT16_MIN, INT16_MAX, 1.0, 0, "N/A");
+VarInt32 outputAmps("Output_Amps", 536887578u, INT32_MIN, INT32_MAX, 0.1, 0, "A");
+VarInt16 battTemp("Avg_BPlusTemp", 536887526u, INT16_MIN, INT16_MAX, 0.1289, 527, "*C");
+VarInt16 mcuTemp("Avg_MMinusTemp", 536887528u, INT16_MIN, INT16_MAX, 0.1289, 527, "*C");
+
+Var* infoVars[] = {  &Vars::model, &Vars::buildDate, &Vars::serialNum,
+                    &Vars::bootRev, &Vars::originalBootRev, &Vars::originalProgRev,
+                    &Vars::programType, &Vars::startUpSwitch, &Vars::hardwareRev };
+
+Var* telemetryVars[] = { 
+    &Vars::battVoltage, &Vars::outputAmps, &Vars::throttleLocal,
+    &Vars::throttlePos, &Vars::battTemp, &Vars::mcuTemp
+};
 }
