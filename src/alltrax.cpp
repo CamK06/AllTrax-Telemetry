@@ -29,11 +29,14 @@ bool initMotorController()
     // Attempt to open the motor controller from its VID and PID
     motorController = hid_open(ALLTRAX_VID, ALLTRAX_PID, NULL);
     if(!motorController) {
+        spdlog::error("Controller not found!");
+        spdlog::error("Exiting...");
         hid_exit();
         return false;
     }
 
     getInfo();
+    spdlog::debug("Controller model: {}", Vars::model.getValue());
 
     return true;
 }

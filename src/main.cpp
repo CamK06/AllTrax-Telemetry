@@ -30,6 +30,7 @@ int main()
 	spdlog::info("HIDAPI " HID_API_VERSION_STR);
 	spdlog::set_level(spdlog::level::debug);
 
-	Alltrax::getInfo();
+	Alltrax::setReceiveCallback(&receive_callback);
+	Alltrax::initMotorController();
 	return 0;
 }
