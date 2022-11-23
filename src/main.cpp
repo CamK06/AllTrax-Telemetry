@@ -18,7 +18,7 @@ void receive_callback(unsigned char* data, size_t len)
 
 	// Dump the data to a file
 	std::ofstream file;
-	file.open("out.bin");
+	file.open("rec.bin");
 	file.write((const char*)data, len);
 	file.close();
 	spdlog::debug("Data received from USB written to out.bin");

@@ -217,7 +217,7 @@ bool readAddress(uint32_t addr, uint numBytes, char** outData)
         num++;
     }
 
-    spdlog::debug("Successfully read address from controller");
+    spdlog::debug("Successfully read {} bytes from {0x{0:x}", numBytes, addr);
     return true;
 }
 
@@ -226,6 +226,7 @@ void readWorker()
     unsigned char* dataIn = new unsigned char[64];
     while(readThreadRunning) {
         hid_read(motorController, dataIn, 64); // This may need to be 65 bytes or some other number
+        memcpy(receivedData+8, dataIn, 56); // Copy the data portion of the packet into receivedData
         rxCallback(dataIn, 64);
     }
 }
@@ -233,11 +234,11 @@ void readWorker()
 void beginRead()
 {
     // Begin the read thread
-    readThread = std::thread(&readWorker);
-    readThreadRunning = true;
     receivedData = new char[56];
     for(int i = 0; i < 56; i++)
         receivedData = 0x00;
+    readThread = std::thread(&readWorker);
+    readThreadRunning = true;
 }
 
 void endRead()
