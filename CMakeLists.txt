@@ -8,7 +8,7 @@ find_package(spdlog REQUIRED)
 find_package(hidapi REQUIRED)
 #pkg_check_modules(libusb REQUIRED libusb-1.0)
 
-file(GLOB SOURCES "src/*.cpp")
+file(GLOB SOURCES "src/*.cpp" "src/**/*.cpp")
 
 add_executable(alltrax ${SOURCES})
 include_directories(${SPDLOG_INCLUDE_DIR} ${HIDAPI_INCLUDE_DIRS}) # ${LIBUSB_INCLUDE_DIRS})

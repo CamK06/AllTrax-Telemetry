@@ -1,4 +1,4 @@
-#include "alltrax.h"
+#include "alltrax/alltrax.h"
 #include "version.h"
 
 #include <spdlog/spdlog.h>
