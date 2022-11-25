@@ -1,21 +1,19 @@
 #include "alltrax.h"
 #include "alltraxvars.h"
 #include <thread>
-
-#define ALLTRAX_VID 0x23D4
-#define ALLTRAX_PID 0x0001 // This is 1 on our controller 
-
 #include <spdlog/spdlog.h>
 
 namespace Alltrax
 {
-
+// General vars
 hid_device* motorController = nullptr;
-mcu_receive_callback_t rxCallback = nullptr;
-char* receivedData = nullptr;
-bool readThreadRunning = false;
-std::thread readThread;
-bool useChecksum = true;
+bool useChecksum = true; // This is always true in our controller
+
+// Monitor mode vars
+mcu_mon_callback_t rxCallback = nullptr;
+bool monThreadRunning = false;
+std::thread monThread;
+int monDelay = 0;
 
 bool initMotorController()
 {
@@ -23,10 +21,9 @@ bool initMotorController()
     if(rxCallback == nullptr)
         spdlog::warn("Receive callback is not set! No data will be received from the motor controller!");
 
+    // Attempt to open the motor controller from its VID and PID
     spdlog::info("Searching for motor controller...");
     hid_init();
-
-    // Attempt to open the motor controller from its VID and PID
     motorController = hid_open(ALLTRAX_VID, ALLTRAX_PID, NULL);
     if(!motorController) {
         spdlog::error("Controller not found!");
@@ -35,15 +32,8 @@ bool initMotorController()
         return false;
     }
 
-    getInfo();
-    spdlog::debug("Motor controller model: {}", Vars::model.getValue());
-    spdlog::debug("Motor controller build date: {}", Vars::buildDate.getValue());
-    spdlog::debug("Motor controller serial number: {}", Vars::serialNum.getVal());
-    spdlog::debug("Motor controller boot revision: {}", Vars::bootRev.convertToReal());
-    spdlog::debug("Motor controller program type: {}", Vars::programType.convertToReal());
-    spdlog::debug("Motor controller hardware revision: {}", Vars::hardwareRev.getVal());
-
-    return true;
+    // Read the controllers basic info, return a bool indicating if the read succeeded or not
+    return getInfo();
 }
 
 bool sendData(char reportID, uint addressFunction, unsigned char* data, unsigned char length)
@@ -65,6 +55,7 @@ bool sendData(char reportID, uint addressFunction, unsigned char* data, unsigned
     for(int i = 0; i < 4; i++)
         packet[4+i] = address[i];
 
+    // Checksum calculation
     if(useChecksum) {
         int num = (int)(packet[0] + packet[1]);
         for(int i = 4; i < 64; i++)
@@ -95,9 +86,14 @@ bool sendData(char reportID, uint addressFunction, unsigned char* data, unsigned
 
 bool getInfo()
 {
-    readVars(Vars::infoVars, 9);
-
-    return false;
+    bool result = readVars(Vars::infoVars, 9);
+    spdlog::debug("Motor controller model: {}", Vars::model.getValue());
+    spdlog::debug("Motor controller build date: {}", Vars::buildDate.getValue());
+    spdlog::debug("Motor controller serial number: {}", Vars::serialNum.getVal());
+    spdlog::debug("Motor controller boot revision: {}", Vars::bootRev.convertToReal());
+    spdlog::debug("Motor controller program type: {}", Vars::programType.convertToReal());
+    spdlog::debug("Motor controller hardware revision: {}", Vars::hardwareRev.getVal());
+    return result;
 }
 
 // This entire function is overcommented to hell and back because honestly even I barely understand *why* Alltrax's original software does half of the stuff
@@ -208,23 +204,24 @@ bool readAddress(uint32_t addr, uint numBytes, unsigned char** outData)
     spdlog::debug("Reading address 0x{0:x} from controller...", addr);
     spdlog::debug("Bytes to read {}", numBytes);
 
-    // Send the data
+    // Read the bytes in groups of 56bytes
     int i = 0;
     while((i * 56) < numBytes) {
-        uint len  = numBytes - (i * 56);
+        // Calculate the length to ask the controller for
+        uint len  = numBytes - (i * 56); // len = bytes to read - bytes already read
         if(len > 56u)
             len = 56u;
         else if(len <= 0)
             break;
         
+        // Send the read command to the controller
         bool result = sendData(1, addr + (56 * i), nullptr, len);
         if(!result)
             return result;
-        
-        unsigned char buf[65];
-        int bytesRead = hid_read(motorController, buf, 65);
 
         // Read the data
+        unsigned char buf[65];
+        int bytesRead = hid_read(motorController, buf, 65);
         for(int j = 0; j < bytesRead-8; j++)
             (*outData)[j+(i*56)] = buf[j+8];
         i++;
@@ -234,43 +231,53 @@ bool readAddress(uint32_t addr, uint numBytes, unsigned char** outData)
     return true;
 }
 
-void readWorker()
+bool readSensors(sensor_data* sensors)
 {
-    unsigned char dataIn[65];
-    spdlog::debug("Started read thread");
-    while(readThreadRunning) {
-        hid_read(motorController, dataIn, 65); // This may need to be 65 bytes or some other number
-        spdlog::debug("Got data");
-        memcpy(receivedData+8, dataIn, 56); // Copy the data portion of the packet into receivedData
-        rxCallback(dataIn, 64);
+    if(!readVars(Vars::telemetryVars, 6))
+        return false;
+    
+    // Set the values in the output struct to the read data
+    sensors->battVolt = Vars::battVoltage.convertToReal();
+	sensors->battCur = Vars::outputAmps.convertToReal() * (double)Vars::throttleLocal.getVal() / 4095.0;
+	sensors->throttle = 100.0 * Vars::throttlePos.convertToReal() / 4095.0;
+	sensors->controlTemp = Vars::mcuTemp.convertToReal();
+	sensors->battTemp = Vars::battTemp.convertToReal();
+    return true;
+}
+
+void startMonitor(int interval)
+{
+    monDelay = interval;
+    monThreadRunning = true;
+    monThread = std::thread(monitorWorker);
+}
+
+void stopMonitor()
+{
+    monThreadRunning = false;
+    if(monThread.joinable())
+        monThread.join();
+}
+
+void monitorWorker()
+{
+    sensor_data* sensors = (sensor_data*)malloc(sizeof(sensor_data));
+    while(monThreadRunning) {
+        readSensors(sensors);
+        rxCallback(sensors);
+        std::this_thread::sleep_for(std::chrono::seconds(monDelay));
     }
-    spdlog::debug("Read thread ended");
-}
-
-void beginRead()
-{
-    // Begin the read thread
-    receivedData = new char[56];
-    for(int i = 0; i < 56; i++)
-        receivedData = 0x00;
-    readThread = std::thread(&readWorker);
-    readThreadRunning = true;
-}
-
-void endRead()
-{
-    // Clean up the read thread
-    readThreadRunning = false;
-    if(readThread.joinable())
-        readThread.join();
-    delete receivedData;
+    free(sensors);
 }
 
 void cleanup()
 {
-    endRead();
+    monThreadRunning = false;
+    if(monThread.joinable())
+        monThread.join();
+    hid_close(motorController);
 }
 
-void setReceiveCallback(mcu_receive_callback_t callback) { rxCallback = callback; }
+void setMonitorCallback(mcu_mon_callback_t callback) { rxCallback = callback; }
 
 }
