@@ -8,6 +8,7 @@ namespace Alltrax
 // General vars
 hid_device* motorController = nullptr;
 bool useChecksum = true; // This is always true in our controller
+bool fakeData = false;
 
 // Monitor mode vars
 mcu_mon_callback_t rxCallback = nullptr;
@@ -15,24 +16,27 @@ bool monThreadRunning = false;
 std::thread monThread;
 int monDelay = 0;
 
-bool initMotorController()
+bool initMotorController(bool useFakeData)
 {
     // Warn the user if the receive callback has not been set
     if(rxCallback == nullptr)
         spdlog::warn("Receive callback is not set! No data will be received from the motor controller!");
 
     // Attempt to open the motor controller from its VID and PID
-    spdlog::info("Searching for motor controller...");
-    hid_init();
-    motorController = hid_open(ALLTRAX_VID, ALLTRAX_PID, NULL);
-    if(!motorController) {
-        spdlog::error("Controller not found!");
-        spdlog::error("Exiting...");
-        hid_exit();
-        return false;
+    if(!useFakeData) {
+        spdlog::info("Searching for motor controller...");
+        hid_init();
+        motorController = hid_open(ALLTRAX_VID, ALLTRAX_PID, NULL);
+        if(!motorController) {
+            spdlog::error("Controller not found!");
+            spdlog::error("Exiting...");
+            hid_exit();
+            return false;
+        }
     }
 
     // Read the controllers basic info, return a bool indicating if the read succeeded or not
+    fakeData = useFakeData;
     return getInfo();
 }
 
@@ -86,13 +90,20 @@ bool sendData(char reportID, uint addressFunction, unsigned char* data, unsigned
 
 bool getInfo()
 {
-    bool result = readVars(Vars::infoVars, 9);
-    spdlog::debug("Motor controller model: {}", Vars::model.getValue());
-    spdlog::debug("Motor controller build date: {}", Vars::buildDate.getValue());
-    spdlog::debug("Motor controller serial number: {}", Vars::serialNum.getVal());
-    spdlog::debug("Motor controller boot revision: {}", Vars::bootRev.convertToReal());
-    spdlog::debug("Motor controller program type: {}", Vars::programType.convertToReal());
-    spdlog::debug("Motor controller hardware revision: {}", Vars::hardwareRev.getVal());
+    bool result = false;
+    if(!fakeData) {
+        result = readVars(Vars::infoVars, 9);
+        spdlog::debug("Motor controller model: {}", Vars::model.getValue());
+        spdlog::debug("Motor controller build date: {}", Vars::buildDate.getValue());
+        spdlog::debug("Motor controller serial number: {}", Vars::serialNum.getVal());
+        spdlog::debug("Motor controller boot revision: {}", Vars::bootRev.convertToReal());
+        spdlog::debug("Motor controller program type: {}", Vars::programType.convertToReal());
+        spdlog::debug("Motor controller hardware revision: {}", Vars::hardwareRev.getVal());
+    }
+    else {
+        result = true;
+        spdlog::debug("Running fake motor contoller");
+    }
     return result;
 }
 
@@ -245,6 +256,15 @@ bool readSensors(sensor_data* sensors)
     return true;
 }
 
+void generateFakeData(sensor_data* sensors)
+{
+    sensors->battVolt = fabs(sin(time(NULL)))*13;
+    sensors->battCur = fabs(cos(time(NULL)))*25;
+    sensors->throttle = fabs(cos(time(NULL)))*100;
+    sensors->battTemp = 23.3+(cos(time(NULL))*2);
+    sensors->controlTemp = 26.4+(sin(time(NULL))*4);
+}
+
 void startMonitor(int interval)
 {
     monDelay = interval;
@@ -263,7 +283,10 @@ void monitorWorker()
 {
     sensor_data* sensors = (sensor_data*)malloc(sizeof(sensor_data));
     while(monThreadRunning) {
-        readSensors(sensors);
+        if(!fakeData)
+            readSensors(sensors);
+        else
+            generateFakeData(sensors);
         rxCallback(sensors);
         std::this_thread::sleep_for(std::chrono::seconds(monDelay));
     }

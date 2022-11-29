@@ -1,5 +1,7 @@
 #include "alltrax/alltrax.h"
+#include "telemetry/packet.h"
 #include "version.h"
+#include "util.h"
 
 #include <spdlog/spdlog.h>
 #include <fstream>
@@ -8,22 +10,28 @@
 void printSensors(sensor_data* sensors)
 {
 	// Battery
-	spdlog::debug("Battery Voltage: {}V", sensors->battVolt);
-	spdlog::debug("Battery Current: {}A", sensors->battCur);
+	spdlog::debug("Battery Voltage: {0:.1f}V", sensors->battVolt);
+	spdlog::debug("Battery Current: {0:.1f}A", sensors->battCur);
 
 	// Motor
 	
 	// Misc
 	spdlog::debug("Throttle: {}%", sensors->throttle);
-	spdlog::debug("Controller Temp: {}C", sensors->controlTemp);
-	spdlog::debug("Battery Temp: {}C", sensors->battTemp);
+	spdlog::debug("Controller Temp: {0:.1f}C", sensors->controlTemp);
+	spdlog::debug("Battery Temp: {0:.1f}C", sensors->battTemp);
 	printf("\n");	
 }
 
 void monitor_callback(sensor_data* sensors)
 {
 	printSensors(sensors);
+	unsigned char* packet = new unsigned char[32];
+	Telemetry::formatPacket(sensors, &packet);
+	Util::dumpHex(packet, 32);
+
 	// TRANSMIT HERE
+
+	delete packet;
 }
 
 int main()
@@ -33,7 +41,7 @@ int main()
 	spdlog::set_level(spdlog::level::debug);
 
 	Alltrax::setMonitorCallback(&monitor_callback);
-	if(!Alltrax::initMotorController())
+	if(!Alltrax::initMotorController(true)) // FAKE CONTROLLER
 		return -1;
 	Alltrax::startMonitor();
 	while(Alltrax::monThreadRunning);

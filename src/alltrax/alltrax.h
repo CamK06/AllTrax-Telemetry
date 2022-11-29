@@ -22,7 +22,7 @@ namespace Alltrax
 extern bool monThreadRunning;
 
 // Wrapper functions
-bool initMotorController();
+bool initMotorController(bool useFakeData = false);
 bool getInfo();
 void cleanup();
 
@@ -32,6 +32,7 @@ void stopMonitor();
 bool readSensors(sensor_data* sensors);
 void setMonitorCallback(mcu_mon_callback_t callback);
 void monitorWorker();
+void generateFakeData(sensor_data* sensors);
 
 // Controller I/O functions
 bool sendData(char reportID, char* addressFunction, char** outData, char length);
