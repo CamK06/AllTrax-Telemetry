@@ -1,10 +1,10 @@
 #include "alltrax/alltrax.h"
 #include "telemetry/packet.h"
+#include "telemetry/radio.h"
 #include "version.h"
 #include "util.h"
 
 #include <spdlog/spdlog.h>
-#include <fstream>
 #include <signal.h>
 
 void printSensors(sensor_data* sensors)
@@ -12,8 +12,6 @@ void printSensors(sensor_data* sensors)
 	// Battery
 	spdlog::debug("Battery Voltage: {0:.1f}V", sensors->battVolt);
 	spdlog::debug("Battery Current: {0:.1f}A", sensors->battCur);
-
-	// Motor
 	
 	// Misc
 	spdlog::debug("Throttle: {}%", sensors->throttle);
@@ -25,13 +23,7 @@ void printSensors(sensor_data* sensors)
 void monitor_callback(sensor_data* sensors)
 {
 	printSensors(sensors);
-	unsigned char* packet = new unsigned char[32];
-	Telemetry::formatPacket(sensors, &packet);
-	Util::dumpHex(packet, 32);
-
-	// TRANSMIT HERE
-
-	delete packet;
+	Telemetry::txSensors(sensors);
 }
 
 int main()
@@ -47,5 +39,6 @@ int main()
 	while(Alltrax::monThreadRunning);
 
 	Alltrax::cleanup();
+	spdlog::info("Exiting...");
 	return 0;
 }
