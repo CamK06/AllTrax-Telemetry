@@ -3,19 +3,10 @@
 #include <spdlog/spdlog.h>
 #include <hidapi/hidapi.h>
 #include "alltraxvars.h"
+#include "packet.h"
 
 #define ALLTRAX_VID 0x23D4
 #define ALLTRAX_PID 0x0001 // This is 1 on our controller 
-
-struct sensor_data
-{
-	int throttle; 
-	double battVolt;
-	double battCur;
-	double battTemp;
-	double controlTemp;
-};
-typedef void (*mcu_mon_callback_t)(sensor_data* sensors);
 
 namespace Alltrax
 {

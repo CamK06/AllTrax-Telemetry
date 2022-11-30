@@ -1,6 +1,6 @@
 #include "alltrax/alltrax.h"
-#include "telemetry/packet.h"
-#include "telemetry/radio.h"
+#include "packet.h"
+#include "radio.h"
 #include "version.h"
 #include "util.h"
 

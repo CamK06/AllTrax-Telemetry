@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../alltrax/alltrax.h"
+#include "alltrax/alltrax.h"
+#include "packet.h"
 
 namespace Telemetry
 {
