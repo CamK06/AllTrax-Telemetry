@@ -135,9 +135,9 @@ bool readVars(Var** vars, int varCount)
             // Break if the distance from the end of the current var to the start of the next is >= 20bytes
             // For some reason this causes the data length to be all weird, it works fine if we use continue instead of break but
             // that is probably quite incorrect...
-            //if((vars[j].getAddr() - lastByte) >= 20U)
-            //    break;
-            //    continue;
+            if((vars[j]->getAddr() - lastByte) >= 20)
+                //break;
+                continue;
 
             // Set lastByte to be the last byte of the current variable (this in most cases will be the last variable in the array)
             lastByte = vars[j]->getAddr() + (vars[j]->getNumBytes() * vars[j]->getArrayLen());

@@ -33,7 +33,7 @@ int main()
 	spdlog::set_level(spdlog::level::debug);
 
 	Alltrax::setMonitorCallback(&monitor_callback);
-	if(!Alltrax::initMotorController(true)) // FAKE CONTROLLER
+	if(!Alltrax::initMotorController(false)) // FAKE CONTROLLER
 		return -1;
 	Alltrax::startMonitor();
 	while(Alltrax::monThreadRunning);
