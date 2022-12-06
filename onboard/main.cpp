@@ -23,6 +23,9 @@ void printSensors(sensor_data* sensors)
 void monitor_callback(sensor_data* sensors)
 {
 	printSensors(sensors);
+	unsigned char* outData = new unsigned char[32];
+	Telemetry::formatPacket(sensors, &outData);
+	Util::dumpHex(outData, 32);
 	Telemetry::txSensors(sensors);
 }
 
@@ -33,7 +36,7 @@ int main()
 	spdlog::set_level(spdlog::level::debug);
 
 	Alltrax::setMonitorCallback(&monitor_callback);
-	if(!Alltrax::initMotorController(false)) // FAKE CONTROLLER
+	if(!Alltrax::initMotorController(true))
 		return -1;
 	Alltrax::startMonitor();
 	while(Alltrax::monThreadRunning);
