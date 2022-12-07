@@ -178,15 +178,10 @@
      <string>File</string>
     </property>
     <addaction name="fileConnect"/>
+    <addaction name="fileExport"/>
     <addaction name="fileExit"/>
    </widget>
-   <widget class="QMenu" name="menuAbout">
-    <property name="title">
-     <string>About</string>
-    </property>
-   </widget>
    <addaction name="menuFile"/>
-   <addaction name="menuAbout"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="fileExit">
@@ -200,6 +195,17 @@
   <action name="fileConnect">
    <property name="text">
     <string>Connect...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+C</string>
+   </property>
+  </action>
+  <action name="fileExport">
+   <property name="text">
+    <string>Export...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
    </property>
   </action>
  </widget>

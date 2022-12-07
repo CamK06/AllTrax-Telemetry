@@ -111,5 +111,7 @@ void MainWindow::updateData()
     ui->currentLabel->setText(QString("Current: %1A").arg(sensors[sensors.size()-1].battCur));
 }
 
-void MainWindow::connectTelem() { Telemetry::initRadio(this); }
+#ifdef GUI_RX
+void MainWindow::connectTelem() { Radio::init(this); }
+#endif
 void MainWindow::exit(int code) { std::exit(code); }

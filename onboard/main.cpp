@@ -26,7 +26,7 @@ void monitor_callback(sensor_data* sensors)
 	unsigned char* outData = new unsigned char[32];
 	Telemetry::formatPacket(sensors, &outData);
 	Util::dumpHex(outData, 32);
-	Telemetry::txSensors(sensors);
+	Radio::sendSensors(sensors);
 }
 
 int main()
@@ -34,6 +34,8 @@ int main()
 	spdlog::info("AllTrax SR Telemetry TX " VERSION);
 	spdlog::info("HIDAPI " HID_API_VERSION_STR);
 	spdlog::set_level(spdlog::level::debug);
+
+	Radio::init();
 
 	Alltrax::setMonitorCallback(&monitor_callback);
 	if(!Alltrax::initMotorController(true))

@@ -8,6 +8,8 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
+add_compile_definitions(GUI_RX)
+
 file(GLOB SOURCES "*.cpp" "**/*.cpp" "../common/*.cpp") 
 add_executable(telemetry-gui ${SOURCES})
 target_link_libraries(telemetry-gui PRIVATE spdlog::spdlog Qt6::Widgets Qt6::Charts)
