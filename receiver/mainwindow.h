@@ -33,6 +33,7 @@ private:
 
     // Data
     time_t lastRx;
+    std::vector<time_t> times;
     std::vector<sensor_data> sensors;
 
     // Graphing

@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "radio.h"
 #include <QTimer>
+#include <QValueAxis>
 #include <spdlog/spdlog.h>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -15,54 +16,84 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->fileExit, &QAction::triggered, this, &MainWindow::exit);
     connect(ui->fileConnect, &QAction::triggered, this, &MainWindow::connectTelem);
 
-    // Set up graphs
+    // Create graph objects
     voltsSeries = new QLineSeries();
     currentSeries = new QLineSeries();
     voltsChart = new QChart();
     currentChart = new QChart();
-    voltsChart->legend()->hide();
-    voltsChart->setBackgroundVisible(false);
-    ui->voltsGraph->setRenderHint(QPainter::Antialiasing);
-    ui->voltsGraph->setChart(voltsChart);
-    currentChart->legend()->hide();
-    currentChart->setBackgroundVisible(false);
-    ui->currentGraph->setRenderHint(QPainter::Antialiasing);
-    ui->currentGraph->setChart(currentChart);
 
+    // Set up graph appearance; no background, no legend, anti aliased
+    voltsChart->legend()->hide();
+    currentChart->legend()->hide();
+    voltsChart->setBackgroundVisible(false);
+    currentChart->setBackgroundVisible(false);
+    ui->voltsGraph->setRenderHint(QPainter::Antialiasing);
+    ui->currentGraph->setRenderHint(QPainter::Antialiasing);
+
+    // Add the new series to the graphs
+    // they are currently empty but this is still needed for creating axes
+    voltsChart->addSeries(voltsSeries);
+    currentChart->addSeries(currentSeries);
+
+    // Set up graph axes
+    voltsChart->createDefaultAxes();
+    currentChart->createDefaultAxes();
+    voltsChart->axes(Qt::Horizontal)[0]->setLabelsVisible(false);
+    voltsChart->axes(Qt::Vertical)[0]->setLabelsColor(QApplication::palette().text().color());
+    voltsChart->axes(Qt::Vertical)[0]->setTitleText("Battery Voltage (V)");
+    voltsChart->axes(Qt::Vertical)[0]->setTitleBrush(QBrush(QApplication::palette().text().color()));
+    currentChart->axes(Qt::Horizontal)[0]->setLabelsVisible(false);
+    currentChart->axes(Qt::Vertical)[0]->setLabelsColor(QApplication::palette().text().color());
+    currentChart->axes(Qt::Vertical)[0]->setTitleText("Battery Current (A)");
+    currentChart->axes(Qt::Vertical)[0]->setTitleBrush(QBrush(QApplication::palette().text().color()));
+    currentChart->axes(Qt::Vertical)[0]->setRange(0, 100); // 100A max
+
+    // Add the charts to the UI and update text labels
+    ui->voltsGraph->setChart(voltsChart);
+    ui->currentGraph->setChart(currentChart);
+    updateData();
+}
+
+void MainWindow::packetCallback(sensor_data sensors)
+{
+    // Append the new data to the graphs
+    voltsSeries->append(this->sensors.size(), sensors.battVolt);
+    currentSeries->append(this->sensors.size(), sensors.battCur);
+
+    // Update the axes to fit the new data
+    // TODO: Find a cleaner way to do this
+    float highestVoltage = sensors.battVolt;
+    for(int i = 0; i < this->sensors.size(); i++)
+        if(this->sensors[i].battVolt > highestVoltage)
+            highestVoltage = this->sensors[i].battVolt;
+    voltsChart->axes(Qt::Vertical)[0]->setRange(0, highestVoltage);
+    float highestAmperage = sensors.battCur;
+    for(int i = 0; i < this->sensors.size(); i++)
+        if(this->sensors[i].battCur > highestAmperage)
+            highestAmperage = this->sensors[i].battCur;
+    currentChart->axes(Qt::Vertical)[0]->setRange(0, highestAmperage);
+
+    // Redraw the graphs
+    voltsChart->removeSeries(voltsSeries);
+    currentChart->removeSeries(currentSeries);
+    voltsChart->addSeries(voltsSeries);
+    currentChart->addSeries(currentSeries);
+    
+    // Add the sensor data to a vector for future use (exporting)
+    this->sensors.push_back(sensors);
+    this->times.push_back(time(NULL));
+    lastRx = time(NULL);
+
+    // Update the GUI labels
     updateData();
 }
 
 void MainWindow::updateData()
 {
+    // If there's no data, do nothing
     if(sensors.size() <= 0)
         return;
-
-    // Update charts
-    voltsChart->removeAllSeries();
-    currentChart->removeAllSeries();
-    voltsSeries = new QLineSeries();
-    currentSeries = new QLineSeries();
-    for(int i = 0; i < sensors.size(); i++) {
-        voltsSeries->append(i, sensors[i].battVolt);
-        currentSeries->append(i, sensors[i].battCur);
-    }
-    voltsChart->addSeries(voltsSeries);
-    currentChart->addSeries(currentSeries);
-    voltsChart->createDefaultAxes();
-    currentChart->createDefaultAxes();
-
-    // Update chart text because Qt is weird
-    voltsChart->axisX()->setLabelsVisible(false);
-    voltsChart->axisY()->setLabelsColor(QApplication::palette().text().color());
-    voltsChart->axisY()->setTitleText("Battery Voltage (V)");
-    voltsChart->axisY()->setTitleBrush(QBrush(QApplication::palette().text().color()));
-    currentChart->axisX()->setLabelsVisible(false);
-    currentChart->axisY()->setLabelsColor(QApplication::palette().text().color());
-    currentChart->axisY()->setTitleBrush(QBrush(QApplication::palette().text().color()));
-    currentChart->axisY()->setTitleText("Battery Current (A)");
-
-    // Update labels
-
+        
     // General labels
     if(lastRx != -1) {
         char* timeStr = new char[16];
@@ -80,16 +111,5 @@ void MainWindow::updateData()
     ui->currentLabel->setText(QString("Current: %1A").arg(sensors[sensors.size()-1].battCur));
 }
 
-void MainWindow::packetCallback(sensor_data sensors)
-{
-    this->sensors.push_back(sensors);
-    lastRx = time(NULL);
-    updateData();
-}
-
-void MainWindow::connectTelem()
-{
-    Telemetry::initRadio(this);
-}
-
+void MainWindow::connectTelem() { Telemetry::initRadio(this); }
 void MainWindow::exit(int code) { std::exit(code); }
