@@ -8,6 +8,6 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-file(GLOB SOURCES "*.cpp" "**/*.cpp" "../common/src/*.cpp") 
+file(GLOB SOURCES "*.cpp" "**/*.cpp" "../common/*.cpp") 
 add_executable(telemetry-gui ${SOURCES})
 target_link_libraries(telemetry-gui PRIVATE spdlog::spdlog Qt6::Widgets Qt6::Charts)

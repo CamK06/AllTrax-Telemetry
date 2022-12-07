@@ -22,13 +22,17 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 public:
     MainWindow(QWidget *parent = nullptr);
+public slots:
+    void packetCallback(sensor_data sensors);
 private:
+    void connectTelem();
     void updateData();
     void exit(int code);
 
     Ui::MainWindow *ui;
 
     // Data
+    time_t lastRx;
     std::vector<sensor_data> sensors;
 
     // Graphing
