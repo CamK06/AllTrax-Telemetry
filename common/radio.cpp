@@ -14,6 +14,7 @@ namespace Radio
 
 // File descriptor to read/write to/from
 int radiofd = -1;
+int failedPackets = 0;
 
 #ifdef GUI_RX
 MainWindow* mainWindowPtr = nullptr;
@@ -39,8 +40,23 @@ void sendData(unsigned char* data, int len)
     }
 
     // Write the data to the radio socket
-    if(write(radiofd, data, len) < 0) {
+    if(send(radiofd, data, len, MSG_NOSIGNAL) < 0) {
         spdlog::error("Failed to send packet!");
+        failedPackets++;
+
+        // If we've failed to send more than 5 times, we've lost connection,
+        // listen for another.
+        if(failedPackets >= 3) {
+            close(radiofd);
+            radiofd = -1;
+            failedPackets = 0;
+            spdlog::error("Too many packets failed to send; giving up.");
+#ifndef GUI_RX
+            init();
+#else
+            init(mainWindowPtr);
+#endif
+        }
         return;
     }
     spdlog::debug("Successfully sent {} bytes", len);
