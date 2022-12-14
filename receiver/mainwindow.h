@@ -27,6 +27,7 @@ public slots:
 private:
     void connectTelem();
     void updateData();
+    void exportJson();
     void exit(int code);
 
     Ui::MainWindow *ui;

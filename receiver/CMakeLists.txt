@@ -3,6 +3,7 @@ project(alltrax)
 
 find_package(QT NAMES Qt6 COMPONENTS Widgets Charts REQUIRED)
 find_package(Qt6 COMPONENTS Widgets Charts REQUIRED)
+find_package(nlohmann_json REQUIRED)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -12,4 +13,4 @@ add_compile_definitions(GUI_RX)
 
 file(GLOB SOURCES "*.cpp" "**/*.cpp" "../common/*.cpp") 
 add_executable(telemetry-gui ${SOURCES})
-target_link_libraries(telemetry-gui PRIVATE spdlog::spdlog Qt6::Widgets Qt6::Charts)
+target_link_libraries(telemetry-gui PRIVATE spdlog::spdlog Qt6::Widgets Qt6::Charts nlohmann_json::nlohmann_json)

@@ -2,7 +2,11 @@
 #include "radio.h"
 #include <QTimer>
 #include <QValueAxis>
+#include <QFileDialog>
+#include <QMessageBox>
 #include <spdlog/spdlog.h>
+#include <nlohmann/json.hpp>
+#include <fstream>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -15,6 +19,7 @@ MainWindow::MainWindow(QWidget *parent)
     // Signals
     connect(ui->fileExit, &QAction::triggered, this, &MainWindow::exit);
     connect(ui->fileConnect, &QAction::triggered, this, &MainWindow::connectTelem);
+    connect(ui->fileExport, &QAction::triggered, this, &MainWindow::exportJson);
 
     // Create graph objects
     voltsSeries = new QLineSeries();
@@ -109,6 +114,33 @@ void MainWindow::updateData()
     // Battery labels
     ui->voltsLabel->setText(QString("Voltage: %1V").arg(sensors[sensors.size()-1].battVolt));
     ui->currentLabel->setText(QString("Current: %1A").arg(sensors[sensors.size()-1].battCur));
+}
+
+void MainWindow::exportJson()
+{
+    // Export the sensor data to json
+    nlohmann::json j;
+    for(int i = 0; i < sensors.size(); i++) { // Add data to the json file
+        j["packets"][i]["time"] = times[i];
+        j["packets"][i]["throttle"] = sensors[i].throttle;
+        j["packets"][i]["battVolt"] = sensors[i].battVolt;
+        j["packets"][i]["battCur"] = sensors[i].battCur;
+        j["packets"][i]["battTemp"] = sensors[i].battTemp;
+    }
+
+    // Save the file
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Save File"), "", tr("JSON Files (*.json)"));
+    if(fileName != "") {
+        // If the file name doesn't have the correct json extension, add it
+        // TODO: Move this to the QFileDialog itself, so the extension is considered in replace warnings
+        if(!fileName.endsWith(".json"))
+            fileName += ".json";
+        std::ofstream file(fileName.toStdString());
+        file << j.dump(4);
+        file.close();
+    }
+    else
+        QMessageBox::warning(this, "Error", "Cannot save file. Location was not valid.");
 }
 
 #ifdef GUI_RX
