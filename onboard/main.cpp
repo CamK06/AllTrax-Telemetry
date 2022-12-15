@@ -38,7 +38,7 @@ int main()
 	Radio::init();
 
 	Alltrax::setMonitorCallback(&monitor_callback);
-	if(!Alltrax::initMotorController(true))
+	if(!Alltrax::initMotorController())
 		return -1;
 	Alltrax::startMonitor();
 	while(Alltrax::monThreadRunning);

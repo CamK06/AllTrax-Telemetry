@@ -1,7 +1,6 @@
 #include "alltrax.h"
 #include "alltraxvars.h"
 #include <thread>
-#include <spdlog/spdlog.h>
 
 namespace Alltrax
 {
@@ -154,12 +153,12 @@ bool readVars(Var** vars, int varCount)
         }
 
         // Parse the read data into appropriate long arrays for Var
-        for(int j = i; j < lastVar; j++) {
+        for(int j = i; j <= lastVar; j++) {
 
             // Copy read data for this variable into a new array (this makes no sense, the indexing seems all wrong)
             // NOTE: I'm 90% certain the purpose of this is to fill varData with just the bytes for the current variable determined by the for loop
             // or in other words, varData should be the bytes from vars[j].address to vars[j].addres+vars[j].arraylength*vars[j].bytes
-            char* varData = new char[vars[j]->getArrayLen() * vars[j]->getNumBytes()];
+            unsigned char* varData = new unsigned char[vars[j]->getArrayLen() * vars[j]->getNumBytes()];
             for(int k = 0; k < vars[j]->getArrayLen() * vars[j]->getNumBytes(); k++)
                 varData[k] = dataIn[(vars[j]->getAddr()-vars[i]->getAddr())+k]; // this will PROBABLY segfault... but it's what AllTrax does so ????????
             long* varValue = new long[vars[j]->getArrayLen()];
@@ -183,6 +182,7 @@ bool readVars(Var** vars, int varCount)
                         varValue[k] = varData[k];
                     break;
 
+                case VarType::INT16:
                 case VarType::UINT16:
                     for(int k = 0; k < vars[j]->getArrayLen(); k++)
                         varValue[k] = (varData[k*2+1] << 8) + varData[k*2];
@@ -246,7 +246,7 @@ bool readSensors(sensor_data* sensors)
 {
     if(!readVars(Vars::telemetryVars, 6))
         return false;
-    
+
     // Set the values in the output struct to the read data
     sensors->battVolt = Vars::battVoltage.convertToReal();
 	sensors->battCur = Vars::outputAmps.convertToReal() * (double)Vars::throttleLocal.getVal() / 4095.0;

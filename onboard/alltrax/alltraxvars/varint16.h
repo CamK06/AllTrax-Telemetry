@@ -12,6 +12,7 @@ public:
     short getMinVal() { return Var::getMinVal(); }
     short getMaxVal() { return Var::getMaxVal(); }
     short getVal() {
+        getArray();
         if(this->_array != nullptr)
             return this->_array[0];
         return 0;
@@ -24,10 +25,11 @@ public:
             return nullptr;
         
         // Map the values of the value array to a new short array
-        short* array = new short[Var::getArrayLen()];
+        delete _array;
+        _array = new short[Var::getArrayLen()];
         for(int i = 0; i < Var::getArrayLen(); i++)
-            array[i] = (short)value[i];
-        return array;
+            _array[i] = (short)value[i];
+        return _array;
     }
 
     // Setters

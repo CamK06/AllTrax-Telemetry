@@ -12,6 +12,7 @@ public:
     int getMinVal() { return Var::getMinVal(); }
     int getMaxVal() { return Var::getMaxVal(); }
     int getVal() {
+        getArray();
         if(this->_array != nullptr)
             return this->_array[0];
         return 0;
@@ -24,10 +25,11 @@ public:
             return nullptr;
         
         // Map the values of the value array to a new int array
-        int* array = new int[Var::getArrayLen()];
+        delete _array;
+        _array = new int[Var::getArrayLen()];
         for(int i = 0; i < Var::getArrayLen(); i++)
-            array[i] = (int)value[i];
-        return array;
+            _array[i] = (int)value[i];
+        return _array;
     }
 
     // Setters

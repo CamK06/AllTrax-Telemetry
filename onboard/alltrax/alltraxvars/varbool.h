@@ -8,7 +8,7 @@ public:
         : Var(name, VarType::BOOL, 1, addr, 0, 255, 0.0, 0, nullptr){}
 
     // Getters
-    bool getValue() { return _array != nullptr && _array[0]; }
+    bool getValue() { getArray(); return _array != nullptr && _array[0]; }
     bool* getArray() { 
 
         // Get the inherited value array, return if null
@@ -17,16 +17,16 @@ public:
             return nullptr;
         
         // Map the values of the value array to a new bool array
-        bool* array = new bool[Var::getArrayLen()];
-        for(int i = 0; i < Var::getArrayLen(); i++) {
+        delete _array;
+        _array = new bool[Var::getArrayLen()];
+        for(int i = 0; i < Var::getArrayLen(); i++)
             if(value[i] == 0)
-                array[i] = false;
+                _array[i] = false;
             else
-                array[i] = true;
-        }
+                _array[i] = true;
 
         // Return the new bool array
-        return array;
+        return _array;
     }
 
     // Setters

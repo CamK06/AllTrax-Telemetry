@@ -12,6 +12,7 @@ public:
     int8_t getMinVal() { return Var::getMinVal(); }
     int8_t getMaxVal() { return Var::getMaxVal(); }
     int8_t getVal() {
+        getArray();
         if(this->_array != nullptr)
             return this->_array[0];
         return 0;
@@ -24,10 +25,11 @@ public:
             return nullptr;
         
         // Map the values of the value array to a new int8_t array
-        int8_t* array = new int8_t[Var::getArrayLen()];
+        delete _array;
+        _array = new int8_t[Var::getArrayLen()];
         for(int i = 0; i < Var::getArrayLen(); i++)
-            array[i] = (int8_t)value[i];
-        return array;
+            _array[i] = (int8_t)value[i];
+        return _array;
     }
 
     // Setters

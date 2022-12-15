@@ -12,6 +12,7 @@ public:
     uint16_t getMinVal() { return Var::getMinVal(); }
     uint16_t getMaxVal() { return Var::getMaxVal(); }
     uint16_t getVal() {
+        getArray();
         if(this->_array != nullptr)
             return this->_array[0];
         return 0;
@@ -24,10 +25,11 @@ public:
             return nullptr;
         
         // Map the values of the value array to a new short array
-        uint16_t* array = new uint16_t[Var::getArrayLen()];
+        delete _array;
+        _array = new uint16_t[Var::getArrayLen()];
         for(int i = 0; i < Var::getArrayLen(); i++)
-            array[i] = (uint16_t)value[i];
-        return array;
+            _array[i] = (uint16_t)value[i];
+        return _array;
     }
 
     // Setters

@@ -14,7 +14,6 @@ public:
             return nullptr;
         
         // Map the values in value to characters
-        // NOTE: String termination *may* have to be added manually here
         char* array = new char[Var::getArrayLen()];
         for(int i = 0; i < Var::getArrayLen(); i++) {
             array[i] = (char)value[i];
