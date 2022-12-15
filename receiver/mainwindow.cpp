@@ -19,6 +19,7 @@ MainWindow::MainWindow(QWidget *parent)
     // Signals
     connect(ui->fileExit, &QAction::triggered, this, &MainWindow::exit);
     connect(ui->fileConnect, &QAction::triggered, this, &MainWindow::connectTelem);
+    connect(ui->fileDisconnect, &QAction::triggered, this, &MainWindow::disconnectTelem);
     connect(ui->fileExport, &QAction::triggered, this, &MainWindow::exportJson);
 
     // Create graph objects
@@ -142,6 +143,8 @@ void MainWindow::exportJson()
     else
         QMessageBox::warning(this, "Error", "Cannot save file. Location was not valid.");
 }
+
+void MainWindow::disconnectTelem() { Radio::close(); }
 
 #ifdef GUI_RX
 void MainWindow::connectTelem() { Radio::init(this); }

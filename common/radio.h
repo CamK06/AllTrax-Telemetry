@@ -16,6 +16,7 @@ namespace Radio
 void sendSensors(sensor_data* sensors);
 void sendData(unsigned char* data, int len);
 void receiveData(int sig);
+void close();
 #ifdef GUI_RX
 void init(MainWindow* mainWindow);
 #else

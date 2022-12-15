@@ -26,6 +26,7 @@ public slots:
     void packetCallback(sensor_data sensors);
 private:
     void connectTelem();
+    void disconnectTelem();
     void updateData();
     void exportJson();
     void exit(int code);

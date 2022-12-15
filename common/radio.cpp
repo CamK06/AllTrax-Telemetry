@@ -47,7 +47,7 @@ void sendData(unsigned char* data, int len)
         // If we've failed to send more than 5 times, we've lost connection,
         // listen for another.
         if(failedPackets >= 3) {
-            close(radiofd);
+            ::close(radiofd);
             radiofd = -1;
             failedPackets = 0;
             spdlog::error("Too many packets failed to send; giving up.");
@@ -156,6 +156,11 @@ void init()
         spdlog::error("Error setting sigio handler");
         return;
     }
+}
+
+void close()
+{
+    ::close(radiofd);
 }
 
 }

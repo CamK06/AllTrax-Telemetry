@@ -178,6 +178,7 @@
      <string>File</string>
     </property>
     <addaction name="fileConnect"/>
+    <addaction name="fileDisconnect"/>
     <addaction name="fileExport"/>
     <addaction name="fileExit"/>
    </widget>
@@ -206,6 +207,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="fileDisconnect">
+   <property name="text">
+    <string>Disconnect...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+D</string>
    </property>
   </action>
  </widget>
