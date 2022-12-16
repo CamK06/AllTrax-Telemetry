@@ -24,6 +24,8 @@ extern VarInt32 programType;
 extern VarInt32 hardwareRev;
 extern VarU32 serialNum;
 extern VarU16 startUpSwitch;
+extern VarU16 lowBattLimit;
+extern VarU16 highBattLimit;
 extern VarU8 throttleType;
 extern Var* infoVars[];
 

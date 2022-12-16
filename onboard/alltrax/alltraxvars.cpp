@@ -12,6 +12,8 @@ VarInt32 programType("ProgramType", 134218796u, INT32_MIN, INT32_MAX, 1.0, 0, "N
 VarInt32 hardwareRev("HardwareRev", 134218800u, INT32_MIN, INT32_MAX, 1.0, 0, "N/A");
 VarU32 serialNum("SerialNum", 134218784u, 0, UINT32_MAX, 1.0, 0, "");
 VarU16 startUpSwitch("StartupSwitch", 134222848u, 0, INT16_MAX, 1.0, 0, "");
+VarU16 lowBattLimit("F_LoBat_Vlim", 134219808u, 0, UINT16_MAX, 0.1, 0, "V");
+VarU16 highBattLimit("F_HiBat_Vlim", 134219810u, 0, UINT16_MAX, 0.1, 0, "V");
 VarU8 throttleType("Throttle_Type", 134219872u, 0, UINT8_MAX, 1.0, 0, "MU");
 
 // Sensors
