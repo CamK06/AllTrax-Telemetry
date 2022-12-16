@@ -91,7 +91,7 @@ bool getInfo()
 {
     bool result = false;
     if(!fakeData) {
-        result = readVars(Vars::infoVars, 9);
+        result = readVars(Vars::infoVars, 13);
         spdlog::debug("Motor controller model: {}", Vars::model.getValue());
         spdlog::debug("Motor controller build date: {}", Vars::buildDate.getValue());
         spdlog::debug("Motor controller serial number: {}", Vars::serialNum.getVal());
@@ -244,7 +244,7 @@ bool readAddress(uint32_t addr, uint numBytes, unsigned char** outData)
 
 bool readSensors(sensor_data* sensors)
 {
-    if(!readVars(Vars::telemetryVars, 6))
+    if(!readVars(Vars::telemetryVars, 9))
         return false;
 
     // Set the values in the output struct to the read data

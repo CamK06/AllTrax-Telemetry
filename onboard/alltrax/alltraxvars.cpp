@@ -29,10 +29,13 @@ VarBool userSwitch("User1_Input", 536887448u);
 
 Var* infoVars[] = {  &Vars::model, &Vars::buildDate, &Vars::serialNum,
                     &Vars::bootRev, &Vars::originalBootRev, &Vars::originalProgRev,
-                    &Vars::programType, &Vars::startUpSwitch, &Vars::hardwareRev };
+                    &Vars::programType, &Vars::startUpSwitch, &Vars::hardwareRev,
+                    &Vars::lowBattLimit, &Vars::highBattLimit, &Vars::throttleType,
+                    &Vars::throttleTypeName };
 
 Var* telemetryVars[] = { 
     &Vars::battVoltage, &Vars::outputAmps, &Vars::throttleLocal,
-    &Vars::throttlePos, &Vars::battTemp, &Vars::mcuTemp
+    &Vars::throttlePos, &Vars::throttlePoint, &Vars::battTemp, 
+    &Vars::mcuTemp, &Vars::userSwitch, &Vars::keySwitch
 };
 }
