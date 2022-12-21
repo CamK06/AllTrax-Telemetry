@@ -145,7 +145,6 @@ void MainWindow::exportJson()
 }
 
 void MainWindow::disconnectTelem() { Radio::close(); }
-
 #ifdef GUI_RX
 void MainWindow::connectTelem() { Radio::init(this); }
 #endif

@@ -91,7 +91,7 @@ bool getInfo()
 {
     bool result = false;
     if(!fakeData) {
-        result = readVars(Vars::infoVars, 13);
+        result = readVars(Vars::infoVars, 6);
         spdlog::debug("Motor controller model: {}", Vars::model.getValue());
         spdlog::debug("Motor controller build date: {}", Vars::buildDate.getValue());
         spdlog::debug("Motor controller serial number: {}", Vars::serialNum.getVal());
@@ -154,24 +154,20 @@ bool readVars(Var** vars, int varCount)
 
         // Parse the read data into appropriate long arrays for Var
         for(int j = i; j <= lastVar; j++) {
-
-            // Copy read data for this variable into a new array (this makes no sense, the indexing seems all wrong)
-            // NOTE: I'm 90% certain the purpose of this is to fill varData with just the bytes for the current variable determined by the for loop
-            // or in other words, varData should be the bytes from vars[j].address to vars[j].addres+vars[j].arraylength*vars[j].bytes
+            
+            // Copy the variables data from dataIn into varData
             unsigned char* varData = new unsigned char[vars[j]->getArrayLen() * vars[j]->getNumBytes()];
-            for(int k = 0; k < vars[j]->getArrayLen() * vars[j]->getNumBytes(); k++)
-                varData[k] = dataIn[(vars[j]->getAddr()-vars[i]->getAddr())+k]; // this will PROBABLY segfault... but it's what AllTrax does so ????????
+            memcpy(varData, dataIn+(vars[j]->getAddr()-vars[i]->getAddr()), vars[j]->getArrayLen() * vars[j]->getNumBytes());
             long* varValue = new long[vars[j]->getArrayLen()];
             
             // Parse all of the data into appropriate formatting for the long array used by Vars
             switch(vars[j]->getType()) {
                 case VarType::BOOL:
-                    for(int k = 0; k < vars[j]->getArrayLen(); k++) {
+                    for(int k = 0; k < vars[j]->getArrayLen(); k++)
                         if(varData[k] == 0)
                             varValue[k] = 0;
                         else
                             varValue[k] = 1;
-                    }
                     break;
 
                 // Single byte values like 8 bit numbers and strings are just 1:1 mapped
@@ -244,7 +240,7 @@ bool readAddress(uint32_t addr, uint numBytes, unsigned char** outData)
 
 bool readSensors(sensor_data* sensors)
 {
-    if(!readVars(Vars::telemetryVars, 9))
+    if(!readVars(Vars::telemetryVars, 6))
         return false;
 
     // Set the values in the output struct to the read data

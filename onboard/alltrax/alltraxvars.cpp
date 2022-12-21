@@ -20,7 +20,6 @@ VarU8 throttleType("Throttle_Type", 134219872u, 0, UINT8_MAX, 1.0, 0, "MU");
 VarInt16 battVoltage("BPlus_Volts", 536887568u, INT16_MIN, INT16_MAX, 0.1, 0, "V");
 VarInt16 throttleLocal("Throttle_Local", 536887574u, INT16_MIN, INT16_MAX, 1.0, 0, "N/A");
 VarInt16 throttlePos("Throttle_Position", 536887576u, INT16_MIN, INT16_MAX, 1.0, 0, "N/A");
-VarInt16 throttlePoint("Throttle_Pointer", 536887592u, INT16_MIN, INT16_MAX, 1.0, 0, "MU");
 VarInt32 outputAmps("Output_Amps", 536887578u, INT32_MIN, INT32_MAX, 0.1, 0, "A");
 VarInt16 battTemp("Avg_BPlusTemp", 536887526u, INT16_MIN, INT16_MAX, 0.1289, 527, "*C");
 VarInt16 mcuTemp("Avg_MMinusTemp", 536887528u, INT16_MIN, INT16_MAX, 0.1289, 527, "*C");
@@ -29,13 +28,10 @@ VarBool userSwitch("User1_Input", 536887448u);
 
 Var* infoVars[] = {  &Vars::model, &Vars::buildDate, &Vars::serialNum,
                     &Vars::bootRev, &Vars::originalBootRev, &Vars::originalProgRev,
-                    &Vars::programType, &Vars::startUpSwitch, &Vars::hardwareRev,
-                    &Vars::lowBattLimit, &Vars::highBattLimit, &Vars::throttleType,
-                    &Vars::throttleTypeName };
+};
 
 Var* telemetryVars[] = { 
-    &Vars::battVoltage, &Vars::outputAmps, &Vars::throttleLocal,
-    &Vars::throttlePos, &Vars::throttlePoint, &Vars::battTemp, 
-    &Vars::mcuTemp, &Vars::userSwitch, &Vars::keySwitch
+    &Vars::battVoltage, &Vars::throttleLocal, &Vars::throttlePos,
+    &Vars::outputAmps, &Vars::battTemp, &Vars::mcuTemp
 };
 }
