@@ -36,7 +36,7 @@ void decodePacket(unsigned char* data, sensor_data* sensors, time_t* recTimeOut)
     memcpy(&sensors->controlTemp, data+28, sizeof(float));
 }
 
-void formatPacket(sensor_data* sensors, unsigned char** outData)
+void formatPacket(sensor_data* sensors, gps_pos* gps, unsigned char** outData)
 {
     // Header
     (*outData)[0] = SEPARATOR_A;

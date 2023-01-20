@@ -3,6 +3,7 @@
 #include "radio.h"
 #include "version.h"
 #include "util.h"
+#include "gps.h"
 
 #include <spdlog/spdlog.h>
 #include <signal.h>
@@ -23,10 +24,12 @@ void printSensors(sensor_data* sensors)
 void monitor_callback(sensor_data* sensors)
 {
 	printSensors(sensors);
+	gps_pos* pos = GPS::getPosition();
+	
 	unsigned char* outData = new unsigned char[32];
-	Telemetry::formatPacket(sensors, &outData);
+	Telemetry::formatPacket(sensors, pos, &outData);
 	Util::dumpHex(outData, 32);
-	Radio::sendSensors(sensors);
+	Radio::sendSensors(sensors, pos);
 }
 
 int main()
@@ -36,6 +39,7 @@ int main()
 	spdlog::set_level(spdlog::level::debug);
 
 	Radio::init();
+	GPS::init();
 
 	Alltrax::setMonitorCallback(&monitor_callback);
 	if(!Alltrax::initMotorController())

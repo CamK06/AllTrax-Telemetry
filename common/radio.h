@@ -13,7 +13,7 @@ typedef void (*radio_rx_callback_t)(unsigned char* data);
 namespace Radio
 {
 
-void sendSensors(sensor_data* sensors);
+void sendSensors(sensor_data* sensors, gps_pos* gps);
 void sendData(unsigned char* data, int len);
 void receiveData(int sig);
 void close();

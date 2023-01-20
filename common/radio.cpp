@@ -22,11 +22,11 @@ MainWindow* mainWindowPtr = nullptr;
 radio_rx_callback_t rxCallback = nullptr;
 #endif
 
-void sendSensors(sensor_data* sensors)
+void sendSensors(sensor_data* sensors, gps_pos* gps)
 {
     // Format and send a packet with the sensor data
     unsigned char* packet = new unsigned char[32];
-    Telemetry::formatPacket(sensors, &packet);
+    Telemetry::formatPacket(sensors, gps, &packet);
     sendData(packet, 32);
     delete packet;
 }
