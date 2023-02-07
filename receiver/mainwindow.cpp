@@ -133,6 +133,8 @@ void MainWindow::exportJson()
         j["packets"][i]["battVolt"] = sensors[i].battVolt;
         j["packets"][i]["battCur"] = sensors[i].battCur;
         j["packets"][i]["battTemp"] = sensors[i].battTemp;
+        j["packets"][i]["lat"] = positions[i].latitude;
+        j["packets"][i]["long"] = positions[i].longitude;
     }
 
     // Save the file
