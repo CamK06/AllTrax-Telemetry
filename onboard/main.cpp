@@ -1,3 +1,5 @@
+#define USE_FAKE_CONTROLLER true
+
 #include "alltrax/alltrax.h"
 #include "packet.h"
 #include "radio.h"
@@ -24,12 +26,20 @@ void printSensors(sensor_data* sensors)
 void monitor_callback(sensor_data* sensors)
 {
 	printSensors(sensors);
-	gps_pos* pos = GPS::getPosition();
+	gps_pos* pos = (gps_pos*)malloc(sizeof(gps_pos));
+#ifndef USE_FAKE_CONTROLLER
+	pos = GPS::getPosition();
+#else
+	pos->latitude = sin(random())*85;
+	pos->longitude = cos(random())*80;
+#endif
 	
-	unsigned char* outData = new unsigned char[32];
+	unsigned char* outData = new unsigned char[50];
 	Telemetry::formatPacket(sensors, pos, &outData);
-	Util::dumpHex(outData, 32);
+	Util::dumpHex(outData, 50);
 	Radio::sendSensors(sensors, pos);
+	delete pos;
+	delete outData;
 }
 
 int main()
@@ -42,9 +52,13 @@ int main()
 	GPS::init();
 
 	Alltrax::setMonitorCallback(&monitor_callback);
+#ifndef USE_FAKE_CONTROLLER
 	if(!Alltrax::initMotorController())
+#else
+	if(!Alltrax::initMotorController(true))
+#endif
 		return -1;
-	Alltrax::startMonitor();
+	Alltrax::startMonitor(3);
 	while(Alltrax::monThreadRunning);
 
 	Alltrax::cleanup();

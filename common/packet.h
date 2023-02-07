@@ -19,6 +19,6 @@ namespace Telemetry
 {
 
 void formatPacket(sensor_data* sensors, gps_pos* gps, unsigned char** outData);
-void decodePacket(unsigned char* data, sensor_data* sensors, time_t* recTimeOut = nullptr);
+void decodePacket(unsigned char* data, sensor_data* sensors, gps_pos* gps, time_t* recTimeOut = nullptr);
 
 }

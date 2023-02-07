@@ -8,12 +8,14 @@ gpsmm* gpsRec;
 
 int init()
 {
+#ifndef USE_FAKE_CONTROLLER
     // Connect to gpsd
     gpsRec = new gpsmm("localhost", DEFAULT_GPSD_PORT);
     if(gpsRec->stream(WATCH_ENABLE | WATCH_JSON) == nullptr) {
         spdlog::error("GPSD: No GPSD running.");
         return false;;
     }
+#endif
     return true;
 }
 

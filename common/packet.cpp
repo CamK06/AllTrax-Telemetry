@@ -12,18 +12,18 @@ Packets will always be 32bytes long
 | = 0xeaff, separator sequence, 2bytes
 TEMP = Average between battery and motor temperature
 
------------------------------------------------------
-|8byte|  4bytes   |  4bytes  |     2byte     |4bytes
------------------------------------------------------
-|[TIME]|[BATTVOLTS]|[BATTAMPS]|[THROTTLEPCNT]|[TEMP]
------------------------------------------------------
+-----------------------------------------------------------------
+|8byte|  4bytes   |  4bytes  |     2byte     |4bytes|  16bytes  |
+-----------------------------------------------------------------
+|[TIME]|[BATTVOLTS]|[BATTAMPS]|[THROTTLEPCNT]|[TEMP]|[LAT]|[LONG]
+-----------------------------------------------------------------
 
 */
 
 namespace Telemetry
 {
 
-void decodePacket(unsigned char* data, sensor_data* sensors, time_t* recTimeOut)
+void decodePacket(unsigned char* data, sensor_data* sensors, gps_pos* gps, time_t* recTimeOut)
 {
     // Decode the packet by simply memcpying into each sensor variable
     // with the offset and size of each variable in the packet
@@ -34,6 +34,8 @@ void decodePacket(unsigned char* data, sensor_data* sensors, time_t* recTimeOut)
     memcpy(&sensors->throttle, data+24, sizeof(int16_t));
     memcpy(&sensors->battTemp, data+28, sizeof(float));
     memcpy(&sensors->controlTemp, data+28, sizeof(float));
+    memcpy(&gps->latitude, data+32, sizeof(double));
+    memcpy(&gps->longitude, data+42, sizeof(double));
 }
 
 void formatPacket(sensor_data* sensors, gps_pos* gps, unsigned char** outData)
@@ -66,6 +68,12 @@ void formatPacket(sensor_data* sensors, gps_pos* gps, unsigned char** outData)
     // Temperature
     float avgTemp = (sensors->battTemp+sensors->controlTemp)/2;
     memcpy((*outData)+28, &avgTemp, sizeof(float));
+
+    // Position
+    memcpy((*outData)+32, &gps->latitude, sizeof(double));
+    (*outData)[40] = SEPARATOR_A;
+    (*outData)[41] = SEPARATOR_A;
+    memcpy((*outData)+42, &gps->longitude, sizeof(double));
 }
 
 }

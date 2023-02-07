@@ -14,6 +14,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
     qRegisterMetaType<sensor_data>();
+    qRegisterMetaType<gps_pos>();
     lastRx = -1;
 
     // Signals
@@ -60,7 +61,7 @@ MainWindow::MainWindow(QWidget *parent)
     updateData();
 }
 
-void MainWindow::packetCallback(sensor_data sensors)
+void MainWindow::packetCallback(sensor_data sensors, gps_pos gps)
 {
     // Append the new data to the graphs
     voltsSeries->append(this->sensors.size(), sensors.battVolt);

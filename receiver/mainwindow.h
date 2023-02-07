@@ -2,6 +2,7 @@
 
 #include "version.h"
 #include "packet.h"
+#include "gps.h"
 #include "./ui_mainwindow.h"
 
 #include <QMainWindow>
@@ -23,7 +24,7 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
 public slots:
-    void packetCallback(sensor_data sensors);
+    void packetCallback(sensor_data sensors, gps_pos gps);
 private:
     void connectTelem();
     void disconnectTelem();

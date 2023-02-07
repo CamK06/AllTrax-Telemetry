@@ -3,9 +3,11 @@
 #include "packet.h"
 
 #ifdef GUI_RX
+#include "gps.h"
 #include "../receiver/mainwindow.h"
 #include <QMetaObject>
 Q_DECLARE_METATYPE(sensor_data);
+Q_DECLARE_METATYPE(gps_pos);
 #else
 typedef void (*radio_rx_callback_t)(unsigned char* data);
 #endif

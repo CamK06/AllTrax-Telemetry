@@ -25,9 +25,9 @@ radio_rx_callback_t rxCallback = nullptr;
 void sendSensors(sensor_data* sensors, gps_pos* gps)
 {
     // Format and send a packet with the sensor data
-    unsigned char* packet = new unsigned char[32];
+    unsigned char* packet = new unsigned char[50];
     Telemetry::formatPacket(sensors, gps, &packet);
-    sendData(packet, 32);
+    sendData(packet, 50);
     delete packet;
 }
 
@@ -64,22 +64,23 @@ void sendData(unsigned char* data, int len)
 
 void receiveData(int sig)
 {
-    // Read 32 bytes from the radio
-    unsigned char* packet = new unsigned char[32];
-    if(read(radiofd, packet, 32) < 0) {
+    // Read 50 bytes from the radio
+    unsigned char* packet = new unsigned char[50];
+    if(read(radiofd, packet, 50) < 0) {
         spdlog::error("Failed to read packet!");
         return;
     }
 
     // Decode the packet
     sensor_data sensors = sensor_data();
-    Telemetry::decodePacket(packet, &sensors);
+    gps_pos gps = gps_pos();
+    Telemetry::decodePacket(packet, &sensors, &gps);
 
     // Trigger the rx callback
 #ifdef GUI_RX
     if(mainWindowPtr == nullptr)
         return;
-    QMetaObject::invokeMethod(mainWindowPtr, "packetCallback", Qt::QueuedConnection, Q_ARG(sensor_data, sensors));
+    QMetaObject::invokeMethod(mainWindowPtr, "packetCallback", Qt::QueuedConnection, Q_ARG(sensor_data, sensors), Q_ARG(gps_pos, gps));
 #else
     if(rxCallback != nullptr)
         rxCallback(packet);
