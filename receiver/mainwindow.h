@@ -38,6 +38,7 @@ private:
     time_t lastRx;
     std::vector<time_t> times;
     std::vector<sensor_data> sensors;
+    std::vector<gps_pos> positions;
 
     // Graphing
     int k = 0;

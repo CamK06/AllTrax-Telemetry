@@ -88,6 +88,7 @@ void MainWindow::packetCallback(sensor_data sensors, gps_pos gps)
     
     // Add the sensor data to a vector for future use (exporting)
     this->sensors.push_back(sensors);
+    this->positions.push_back(gps);
     this->times.push_back(time(NULL));
     lastRx = time(NULL);
 
@@ -116,6 +117,10 @@ void MainWindow::updateData()
     // Battery labels
     ui->voltsLabel->setText(QString("Voltage: %1V").arg(sensors[sensors.size()-1].battVolt));
     ui->currentLabel->setText(QString("Current: %1A").arg(sensors[sensors.size()-1].battCur));
+
+    // Position labels
+    ui->latLabel->setText(QString("Latitude: %1").arg(positions[sensors.size()-1].latitude));
+    ui->longLabel->setText(QString("Longitude: %1").arg(positions[sensors.size()-1].longitude));
 }
 
 void MainWindow::exportJson()
