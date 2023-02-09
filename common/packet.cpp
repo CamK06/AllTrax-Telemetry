@@ -72,8 +72,12 @@ void formatPacket(sensor_data* sensors, gps_pos* gps, unsigned char** outData)
     // Position
     memcpy((*outData)+32, &gps->latitude, sizeof(double));
     (*outData)[40] = SEPARATOR_A;
-    (*outData)[41] = SEPARATOR_A;
+    (*outData)[41] = SEPARATOR_B;
     memcpy((*outData)+42, &gps->longitude, sizeof(double));
+
+    // Footer
+    (*outData)[50] = SEPARATOR_A;
+    (*outData)[51] = SEPARATOR_B;
 }
 
 }

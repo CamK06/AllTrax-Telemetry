@@ -46,4 +46,19 @@ private:
     QLineSeries *currentSeries;
     QChart *voltsChart;
     QChart *currentChart;
+
+    // Battery charge table
+    const float chargeTable[11][2] = {
+        {12.7, 100},
+        {12.5, 90},
+        {12.42, 80},
+        {12.32, 70},
+        {12.20, 60},
+        {12.06, 50},
+        {11.90, 40},
+        {11.75, 30},
+        {11.58, 20},
+        {11.31, 10},
+        {10.50, 0}
+    };
 };

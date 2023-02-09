@@ -1,9 +1,9 @@
 #pragma once
 
 #include "packet.h"
+#include "gps.h"
 
 #ifdef GUI_RX
-#include "gps.h"
 #include "../receiver/mainwindow.h"
 #include <QMetaObject>
 Q_DECLARE_METATYPE(sensor_data);
@@ -20,9 +20,9 @@ void sendData(unsigned char* data, int len);
 void receiveData(int sig);
 void close();
 #ifdef GUI_RX
-void init(MainWindow* mainWindow);
+void init(MainWindow* mainWindow, const char* port);
 #else
-void init();
+void init(const char* port);
 #endif
 
 }

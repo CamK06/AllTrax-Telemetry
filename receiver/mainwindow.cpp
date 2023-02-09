@@ -128,11 +128,22 @@ void MainWindow::exportJson()
     // Export the sensor data to json
     nlohmann::json j;
     for(int i = 0; i < sensors.size(); i++) { // Add data to the json file
+
+        // Calculate approximate charge percentage
+        if(sensors[i].battVolt < 15) // We are likely running 12V
+            for(int k = 0; k < 11; k++)
+                if(sensors[i].battVolt <= chargeTable[k][0])
+                    j["packets"][i]["chargePcnt"] = chargeTable[k][1];
+
+
+        // TODO: Maybe add rough estimate of power use; all Voltage+all Current
         j["packets"][i]["time"] = times[i];
+        j["packets"][i]["timeMs"] = times[i]*1000;
         j["packets"][i]["throttle"] = sensors[i].throttle;
         j["packets"][i]["battVolt"] = sensors[i].battVolt;
         j["packets"][i]["battCur"] = sensors[i].battCur;
         j["packets"][i]["battTemp"] = sensors[i].battTemp;
+        j["packets"][i]["power"] = sensors[i].battCur*sensors[i].battVolt;
         j["packets"][i]["lat"] = positions[i].latitude;
         j["packets"][i]["long"] = positions[i].longitude;
     }
@@ -154,6 +165,6 @@ void MainWindow::exportJson()
 
 void MainWindow::disconnectTelem() { Radio::close(); }
 #ifdef GUI_RX
-void MainWindow::connectTelem() { Radio::init(this); }
+void MainWindow::connectTelem() { Radio::init(this, "/dev/ttyUSB1"); }
 #endif
 void MainWindow::exit(int code) { std::exit(code); }

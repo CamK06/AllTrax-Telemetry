@@ -48,7 +48,7 @@ int main()
 	spdlog::info("HIDAPI " HID_API_VERSION_STR);
 	spdlog::set_level(spdlog::level::debug);
 
-	Radio::init();
+	Radio::init("/dev/ttyUSB0");
 	GPS::init();
 
 	Alltrax::setMonitorCallback(&monitor_callback);
