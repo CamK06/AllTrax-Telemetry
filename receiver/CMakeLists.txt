@@ -1,16 +1,9 @@
 cmake_minimum_required(VERSION 3.1)
 project(alltrax)
 
-find_package(QT NAMES Qt6 COMPONENTS Widgets Charts REQUIRED)
-find_package(Qt6 COMPONENTS Widgets Charts REQUIRED)
 find_package(nlohmann_json REQUIRED)
 
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
-
-add_compile_definitions(GUI_RX)
-
 file(GLOB SOURCES "*.cpp" "**/*.cpp" "../common/*.cpp") 
-add_executable(telemetry-gui ${SOURCES})
-target_link_libraries(telemetry-gui PRIVATE spdlog::spdlog Qt6::Widgets Qt6::Charts nlohmann_json::nlohmann_json ${GPS_LIBRARIES})
+add_executable(telem-receiver ${SOURCES})
+include_directories(cpp-httplib)
+target_link_libraries(telem-receiver PRIVATE spdlog::spdlog nlohmann_json::nlohmann_json ${GPS_LIBRARIES})

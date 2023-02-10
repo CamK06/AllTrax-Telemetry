@@ -7,11 +7,9 @@
 #include <sys/signal.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <spdlog/spdlog.h>
-
-// Serial port
 #include <termios.h>
 #include <errno.h>
+#include <spdlog/spdlog.h>
 
 namespace Radio
 {
@@ -25,11 +23,8 @@ int rxPackets = 0;
 int txErrors = 0;
 int rxErrors = 0;
 
-#ifdef GUI_RX
-MainWindow* mainWindowPtr = nullptr;
-#else
+bool isClient = false;
 radio_rx_callback_t rxCallback = nullptr;
-#endif
 
 void sendSensors(sensor_data* sensors, gps_pos* gps)
 {
@@ -58,15 +53,11 @@ void sendData(unsigned char* data, int len)
         if(txErrors >= 3) {
             ::close(radiofd);
             radiofd = -1;
-	    rxErrors = 0;
-	    rxPackets = 0;
+	        rxErrors = 0;
+	        rxPackets = 0;
             txErrors = 0;
             spdlog::error("Too many packets failed to send; giving up.");
-#ifndef GUI_RX
-            init(serialPort);
-#else
-            init(mainWindowPtr, serialPort);
-#endif
+            init(serialPort, isClient);
         }
         return;
     }
@@ -77,7 +68,7 @@ void receiveData(int sig)
 {
     // Wait for 0.1s before continuing to read, to allow all
     // bytes to come through the port before reading
-    usleep(100000);
+    usleep(200000);
     unsigned char* packet = new unsigned char[52];
 
     // Read 52 bytes from the radio
@@ -89,7 +80,12 @@ void receiveData(int sig)
     else if(nr != 52) {
         spdlog::warn("Received {} bytes, expected 52", nr);
         rxErrors++;
-        return;
+        if(nr < 50)
+            return;
+        else { // If we've only lost the last two bytes, recreate them, they're not actual data
+            packet[50] = 0xea;
+            packet[51] = 0xff;
+        }
     }
     rxPackets++;
 
@@ -108,78 +104,67 @@ void receiveData(int sig)
     tcflush(radiofd, TCIFLUSH);
 
     // Send decoded packet to RX callback
-#ifdef GUI_RX
-    if(mainWindowPtr == nullptr)
-        return;
-    QMetaObject::invokeMethod(mainWindowPtr, "packetCallback", Qt::QueuedConnection, Q_ARG(sensor_data, sensors), Q_ARG(gps_pos, gps));
-#else
     if(rxCallback != nullptr)
-        rxCallback(packet);
-#endif
+        rxCallback(sensors, gps);
 }
 
-#ifdef GUI_RX
-void init(MainWindow* mainWindow, const char* port)
+void init(const char* port, bool client)
 {
-    mainWindowPtr = mainWindow;
-#else
-void init(const char* port)
-{
-#endif
 	serialPort = (char*)port;
+    isClient = client;
 
-    // TEMPORARY CODE BEGINS HERE; REPLACE WITH SERIAL
-//     radiofd = socket(AF_INET, SOCK_STREAM, 0);
-//     if(radiofd < 0) {
-//         spdlog::error("Failed to open socket");
-//         return;
-//     }
+#ifdef USE_IP
+    radiofd = socket(AF_INET, SOCK_STREAM, 0);
+    if(radiofd < 0) {
+        spdlog::error("Failed to open socket");
+        return;
+    }
 
-//     struct sockaddr_in addr;
-//     addr.sin_family = AF_INET;
-//     addr.sin_port = htons(5555);
-// #ifndef GUI_RX
-//     int servfd = -1;
-//     int opt = -1;
-//     int addrlen = sizeof(addr);
+    struct sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(5555);
+    if(!client) {
+        int servfd = -1;
+        int opt = -1;
+        int addrlen = sizeof(addr);
 
-//     // TODO: Replace with serial port code (maintain INET option for testing?)
-//     if((servfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-//         spdlog::error("Failed to open socket");
-//         return;
-//     }
+        if((servfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+            spdlog::error("Failed to open socket");
+            return;
+        }
 
-//     if(setsockopt(servfd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
-//         spdlog::error("Failed to set socket options");
-//         return;
-//     }
-//     addr.sin_addr.s_addr = INADDR_ANY;
-//     if(bind(servfd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
-//         spdlog::error("Failed to bind socket");
-//         return;
-//     }
+        if(setsockopt(servfd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+            spdlog::error("Failed to set socket options");
+            return;
+        }
+        addr.sin_addr.s_addr = INADDR_ANY;
+        if(bind(servfd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+            spdlog::error("Failed to bind socket");
+            return;
+        }
 
-//     spdlog::info("Listening for connections...");
-//     if(listen(servfd, 1) < 0) {
-//         spdlog::error("Failed to listen on socket");
-//         return;
-//     }
-//     if((radiofd = accept(servfd, (struct sockaddr*)&addr, (socklen_t*)&addrlen)) < 0) {
-//         spdlog::error("Failed to accept incoming connection");
-//         return;
-//     }
-//     spdlog::info("Accepted connection");
-// #else
-//     if(inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr) <= 0) {
-//         spdlog::error("Invalid IP address");
-//         return;
-//     }
-//     if(connect(radiofd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-//         spdlog::error("Failed connecting to server");
-//         return;
-//     }
-// #endif
-
+        spdlog::info("Listening for connections...");
+        if(listen(servfd, 1) < 0) {
+            spdlog::error("Failed to listen on socket");
+            return;
+        }
+        if((radiofd = accept(servfd, (struct sockaddr*)&addr, (socklen_t*)&addrlen)) < 0) {
+            spdlog::error("Failed to accept incoming connection");
+            return;
+        }
+        spdlog::info("Accepted connection");
+    }
+    else {
+        if(inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr) <= 0) {
+            spdlog::error("Invalid IP address");
+            return;
+        }
+        if(connect(radiofd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+            spdlog::error("Failed connecting to server");
+            return;
+        }
+    }
+#else
     // Open the serial port
     spdlog::info("Opening {}...", serialPort);
     radiofd = open(serialPort, O_RDWR | O_NOCTTY | O_SYNC);
@@ -195,8 +180,8 @@ void init(const char* port)
         spdlog::error("Failed to get serial port attributes");
         return;
     }
-    cfsetispeed(&tty, 57600);
-    cfsetospeed(&tty, 57600);
+    cfsetispeed(&tty, B57600);
+    cfsetospeed(&tty, B57600);
 
     // Set port options; 8 data bits 1 stop bit
     tty.c_cflag &= ~PARENB;
@@ -206,32 +191,31 @@ void init(const char* port)
     tty.c_cflag &= ~CRTSCTS;
     tty.c_lflag &= ~ICANON;
     tty.c_lflag &= ~IEXTEN;
-    tty.c_lflag &= ~ECHO;
-    tty.c_lflag &= ~ECHOE; 
-    tty.c_lflag &= ~ECHONL;
-    tty.c_lflag &= ~ISIG;
-    tty.c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL);
-    tty.c_oflag &= ~OPOST;
-    tty.c_oflag &= ~ONLCR;
+    // tty.c_lflag &= ~ECHO;
+    // tty.c_lflag &= ~ECHOE; 
+    // tty.c_lflag &= ~ECHONL;
+    // tty.c_lflag &= ~ISIG;
+    // tty.c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL);
+    // tty.c_oflag &= ~OPOST;
+    // tty.c_oflag &= ~ONLCR;
 
     // Apply options
     if(tcsetattr(radiofd, TCSANOW, &tty) != 0) {
         spdlog::error("Failed to set serial port attributes");
         return;
     }
-
+#endif
     // Set port to non-blocking RX
     int flags = fcntl(radiofd, F_GETFL, 0);
     fcntl(radiofd, F_SETFL, flags | O_NONBLOCK | O_ASYNC);
     
     // Set up the receive signal/callback
-#ifdef GUI_RX
+    // This MIGHT need to be disabled in the tx program
     signal(SIGIO, receiveData);
     if(fcntl(radiofd, F_SETOWN, getpid()) < 0) {
         spdlog::error("Error setting sigio handler");
         return;
     }
-#endif
 
     spdlog::info("Opened port {}", serialPort);
 }
@@ -239,6 +223,11 @@ void init(const char* port)
 void close()
 {
     ::close(radiofd);
+}
+
+void setRxCallback(radio_rx_callback_t callback)
+{
+    rxCallback = callback;
 }
 
 }

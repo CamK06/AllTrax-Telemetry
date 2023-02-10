@@ -2,15 +2,9 @@
 
 #include "packet.h"
 #include "gps.h"
+#define USE_IP
 
-#ifdef GUI_RX
-#include "../receiver/mainwindow.h"
-#include <QMetaObject>
-Q_DECLARE_METATYPE(sensor_data);
-Q_DECLARE_METATYPE(gps_pos);
-#else
-typedef void (*radio_rx_callback_t)(unsigned char* data);
-#endif
+typedef void (*radio_rx_callback_t)(sensor_data sensors, gps_pos gps);
 
 namespace Radio
 {
@@ -19,10 +13,7 @@ void sendSensors(sensor_data* sensors, gps_pos* gps);
 void sendData(unsigned char* data, int len);
 void receiveData(int sig);
 void close();
-#ifdef GUI_RX
-void init(MainWindow* mainWindow, const char* port);
-#else
-void init(const char* port);
-#endif
+void init(const char* port, bool client = false);
+void setRxCallback(radio_rx_callback_t callback);
 
 }
