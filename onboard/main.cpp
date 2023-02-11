@@ -58,7 +58,7 @@ int main()
 	if(!Alltrax::initMotorController(true))
 #endif
 		return -1;
-	Alltrax::startMonitor(1);
+	Alltrax::startMonitor(3);
 	while(Alltrax::monThreadRunning);
 
 	Alltrax::cleanup();
