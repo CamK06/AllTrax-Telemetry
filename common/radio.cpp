@@ -29,9 +29,9 @@ radio_rx_callback_t rxCallback = nullptr;
 void sendSensors(sensor_data* sensors, gps_pos* gps)
 {
     // Format and send a packet with the sensor data
-    unsigned char* packet = new unsigned char[52];
+    unsigned char* packet = new unsigned char[64];
     Telemetry::formatPacket(sensors, gps, &packet);
-    sendData(packet, 52);
+    sendData(packet, 64);
     delete packet;
 }
 
@@ -69,22 +69,22 @@ void receiveData(int sig)
     // Wait for 0.1s before continuing to read, to allow all
     // bytes to come through the port before reading
     usleep(200000);
-    unsigned char* packet = new unsigned char[52];
+    unsigned char* packet = new unsigned char[64];
 
-    // Read 52 bytes from the radio
-    int nr = read(radiofd, packet, 52);
+    // Read 64 bytes from the radio
+    int nr = read(radiofd, packet, 64);
     if(nr < 0) {
         spdlog::debug("Double read attempted!");
         return;
     }
-    else if(nr != 52) {
-        spdlog::warn("Received {} bytes, expected 52", nr);
+    else if(nr != 64) {
+        spdlog::warn("Received {} bytes, expected 64", nr);
         rxErrors++;
-        if(nr < 50)
+        if(nr < 60)
             return;
         else { // If we've only lost the last two bytes, recreate them, they're not actual data
-            packet[50] = 0xea;
-            packet[51] = 0xff;
+            packet[62] = 0xea;
+            packet[63] = 0xff;
         }
     }
     rxPackets++;

@@ -32,11 +32,12 @@ void monitor_callback(sensor_data* sensors)
 #else
 	pos->latitude = sin(random())*85;
 	pos->longitude = cos(random())*80;
+	pos->velocity = fabs((sin(random()*10)*cos(random()*20))*35);
 #endif
 	
-	unsigned char* outData = new unsigned char[50];
+	unsigned char* outData = new unsigned char[64];
 	Telemetry::formatPacket(sensors, pos, &outData);
-	Util::dumpHex(outData, 50);
+	Util::dumpHex(outData, 64);
 	Radio::sendSensors(sensors, pos);
 	delete pos;
 	delete outData;

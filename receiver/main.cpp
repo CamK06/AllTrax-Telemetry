@@ -40,6 +40,7 @@ const float chargeTable[11][2] = {
 
 int main()
 {
+	spdlog::set_level(spdlog::level::debug);
     Radio::init(SERIAL_PORT, true);
     Radio::setRxCallback([](sensor_data sensorData, gps_pos gps) {
         // Debug logging
@@ -50,6 +51,7 @@ int main()
 	    spdlog::debug("Battery Temp: {0:.1f}C", sensorData.battTemp);
 		spdlog::debug("GPS: Lat: {0:.6f}, Long: {1:.6f}", gps.latitude, gps.longitude);
 		spdlog::debug("Power: {0:.1f}W", sensorData.battCur*sensorData.battVolt);
+		spdlog::debug("Velocity: {0:.1f}m/s", gps.velocity);
 
 		// Save the data
 		sensors.push_back(sensorData);
@@ -86,6 +88,7 @@ int main()
         	j["packets"][i]["power"] = sensors[i].battCur*sensors[i].battVolt;
         	j["packets"][i]["lat"] = positions[i].latitude;
         	j["packets"][i]["long"] = positions[i].longitude;
+			j["packets"][i]["velocity"] = positions[i].velocity;
 			j["packets"][i]["rxCount"] = packetsReceived[i];
 			j["packets"][i]["lostCount"] = packetsLost[i];
 			j["packets"][i]["index"] = packetsReceived[i] + packetsLost[i];

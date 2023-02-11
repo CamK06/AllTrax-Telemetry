@@ -32,6 +32,7 @@ gps_pos* getPosition()
     gps_pos* pos = new gps_pos;
     pos->latitude = gpsData->fix.latitude;
     pos->longitude = gpsData->fix.longitude;
+    pos->velocity = gpsData->fix.speed;
     return pos;
 }
 

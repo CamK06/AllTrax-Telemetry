@@ -6,6 +6,7 @@ struct gps_pos
 {
     double latitude;
     double longitude;
+    double velocity;
 };
 
 namespace GPS
