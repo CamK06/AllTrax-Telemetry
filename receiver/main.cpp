@@ -42,7 +42,12 @@ int main()
 {
 	spdlog::set_level(spdlog::level::debug);
     Radio::init(SERIAL_PORT, true);
-    Radio::setRxCallback([](sensor_data sensorData, gps_pos gps) {
+    Radio::setRxCallback([](sensor_data sensorData, gps_pos gps, time_t timestamp) {
+
+		// Check if times has the timestamp already, i.e. we've already seen this packet
+		if(std::find(times.begin(), times.end(), timestamp) != times.end())
+			return;
+		
         // Debug logging
 	    spdlog::debug("Battery Voltage: {0:.1f}V", sensorData.battVolt);
 	    spdlog::debug("Battery Current: {0:.1f}A", sensorData.battCur);
@@ -56,18 +61,12 @@ int main()
 		// Save the data
 		sensors.push_back(sensorData);
     	positions.push_back(gps);
-    	times.push_back(time(NULL));
+    	times.push_back(timestamp);
     	lastRx = time(NULL);
 		packetsReceived.push_back(++totalRx);
 		
 		// Calculate packet loss
-		if(times.size() > 1) {
-			int total = (times[times.size()-1] - times[0]) / PACKET_INTERVAL;
-			totalLost = total - totalRx + 1;
-			packetsLost.push_back(totalLost);
-		}
-		else
-			packetsLost.push_back(0);
+		packetsLost.push_back(0);
 
 		// Update the json with new data
     	nlohmann::json j;

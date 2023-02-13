@@ -90,18 +90,20 @@ void receiveData(int sig)
     spdlog::info("Non-critical RX errors: {}", rxErrors);
     spdlog::info("RX percent error: {0:.1f}%", (rxErrors*1.0f/(rxErrors+rxPackets)) * 100.0f);
 
-    // Decode the packet
-    sensor_data sensors = sensor_data();
-    gps_pos gps = gps_pos();
-    Telemetry::decodePacket(packet, &sensors, &gps);
+    // Decode the packets
+    for(int i = 0; i < 300; i++) {
+        sensor_data sensors = sensor_data();
+        gps_pos gps = gps_pos();
+        time_t timestamp = 0;
+        Telemetry::decodePacket(packet+(i*64), &sensors, &gps, &timestamp);
+        // Send decoded packet to RX callback
+        if(rxCallback != nullptr)
+            rxCallback(sensors, gps, timestamp);
+    }
     
     // Cleanup; delete the rx buffer and flush the serial port
     delete packet;
     tcflush(radiofd, TCIFLUSH);
-
-    // Send decoded packet to RX callback
-    if(rxCallback != nullptr)
-        rxCallback(sensors, gps);
 }
 
 void init(const char* port, bool client)
