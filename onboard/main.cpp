@@ -9,6 +9,12 @@
 
 #include <spdlog/spdlog.h>
 #include <signal.h>
+#include <vector>
+
+std::vector<sensor_data*> sensorHistory;
+std::vector<gps_pos*> gpsHistory;
+int monCalls = 0;
+unsigned char* outData = nullptr;
 
 void printSensors(sensor_data* sensors)
 {
@@ -19,7 +25,7 @@ void printSensors(sensor_data* sensors)
 	// Misc
 	spdlog::debug("Throttle: {}%", sensors->throttle);
 	spdlog::debug("Controller Temp: {0:.1f}C", sensors->controlTemp);
-	spdlog::debug("Battery Temp: {0:.1f}C", sensors->battTemp);
+	spdlog::debug("Battery Temp: {0:.1f}C",  sensors->battTemp);
 	printf("\n");	
 }
 
@@ -29,18 +35,42 @@ void monitor_callback(sensor_data* sensors)
 	gps_pos* pos = (gps_pos*)malloc(sizeof(gps_pos));
 #ifndef USE_FAKE_CONTROLLER
 	pos = GPS::getPosition();
-#else
+#else 
 	pos->latitude = sin(random())*85;
 	pos->longitude = cos(random())*80;
 	pos->velocity = fabs((sin(random()*10)*cos(random()*20))*35);
 #endif
-	
-	unsigned char* outData = new unsigned char[64];
-	Telemetry::formatPacket(sensors, pos, &outData);
-	Util::dumpHex(outData, 64);
-	Radio::sendSensors(sensors, pos);
+
+	// Add packet to history, for later json exporting
+	sensorHistory.push_back(sensors);
+	gpsHistory.push_back(pos);
+
+	if(outData == nullptr) {
+		outData = new unsigned char[300*64]; // 5 minute worth of data
+		unsigned char* data = new unsigned char[64];
+		Telemetry::formatPacket(sensors, pos, &data);
+		for(int i = 0; i < 300; i++) // Copy the packet 300 times so it can be shifted easily later
+			memcpy(outData+(i*64), data, 64);
+		delete data;
+	}
+	else {
+		// Shift all packets up 64 bytes
+		unsigned char* tmp = new unsigned char[300*64];
+		memcpy(tmp+64, outData, 299*64);
+		memcpy(outData, tmp, 300*64);
+		delete tmp;
+
+		// Add new packet to beginning
+		Telemetry::formatPacket(sensors, pos, &outData);
+	}
+
+	// Send past 5 minutes of packets every 3 seconds
+	if(++monCalls == 3) {
+		Util::dumpHex(outData, 300*64);
+		Radio::sendData(outData, 300*64);
+		monCalls = 0;
+	}
 	delete pos;
-	delete outData;
 }
 
 int main()
@@ -59,7 +89,7 @@ int main()
 	if(!Alltrax::initMotorController(true))
 #endif
 		return -1;
-	Alltrax::startMonitor(3);
+	Alltrax::startMonitor(1);
 	while(Alltrax::monThreadRunning);
 
 	Alltrax::cleanup();

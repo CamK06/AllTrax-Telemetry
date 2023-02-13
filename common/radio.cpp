@@ -69,23 +69,19 @@ void receiveData(int sig)
     // Wait for 0.1s before continuing to read, to allow all
     // bytes to come through the port before reading
     usleep(200000);
-    unsigned char* packet = new unsigned char[64];
+    unsigned char* packet = new unsigned char[64*300];
 
     // Read 64 bytes from the radio
-    int nr = read(radiofd, packet, 64);
+    int nr = read(radiofd, packet, 64*300);
     if(nr < 0) {
         spdlog::debug("Double read attempted!");
         return;
     }
-    else if(nr != 64) {
-        spdlog::warn("Received {} bytes, expected 64", nr);
+    else if(nr != 64*300) {
+        spdlog::warn("Received {} bytes, expected {}", nr, 64*300);
         rxErrors++;
-        if(nr < 60)
+        if(nr < (64*300)-2)
             return;
-        else { // If we've only lost the last two bytes, recreate them, they're not actual data
-            packet[62] = 0xea;
-            packet[63] = 0xff;
-        }
     }
     rxPackets++;
 
