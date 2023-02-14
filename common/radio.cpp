@@ -26,6 +26,7 @@ int rxErrors = 0;
 bool isClient = false;
 radio_rx_callback_t rxCallback = nullptr;
 
+// This can probably be deleted as we're doing bulk packet sending now
 void sendSensors(sensor_data* sensors, gps_pos* gps)
 {
     // Format and send a packet with the sensor data
@@ -96,6 +97,7 @@ void receiveData(int sig)
         gps_pos gps = gps_pos();
         time_t timestamp = 0;
         Telemetry::decodePacket(packet+(i*64), &sensors, &gps, &timestamp);
+        
         // Send decoded packet to RX callback
         if(rxCallback != nullptr)
             rxCallback(sensors, gps, timestamp);

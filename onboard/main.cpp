@@ -32,6 +32,8 @@ void printSensors(sensor_data* sensors)
 void monitor_callback(sensor_data* sensors)
 {
 	printSensors(sensors);
+	
+	// Get GPS position or fake it
 	gps_pos* pos = (gps_pos*)malloc(sizeof(gps_pos));
 #ifndef USE_FAKE_CONTROLLER
 	pos = GPS::getPosition();
@@ -45,11 +47,12 @@ void monitor_callback(sensor_data* sensors)
 	sensorHistory.push_back(sensors);
 	gpsHistory.push_back(pos);
 
+	// If we don't have any data, create a new buffer by copying the first packet 300 times
 	if(outData == nullptr) {
 		outData = new unsigned char[300*64]; // 5 minute worth of data
 		unsigned char* data = new unsigned char[64];
 		Telemetry::formatPacket(sensors, pos, &data);
-		for(int i = 0; i < 300; i++) // Copy the packet 300 times so it can be shifted easily later
+		for(int i = 0; i < 300; i++)
 			memcpy(outData+(i*64), data, 64);
 		delete data;
 	}

@@ -17,9 +17,9 @@ time_t lastRx = -1;
 std::vector<time_t> times;
 std::vector<sensor_data> sensors;
 std::vector<gps_pos> positions;
-std::string json;
 std::vector<int> packetsReceived;
 std::vector<int> packetsLost;
+std::string json;
 int totalRx = 0;
 int totalLost = 0;
 
