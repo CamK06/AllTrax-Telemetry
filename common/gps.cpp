@@ -22,6 +22,10 @@ int init()
 gps_pos* getPosition()
 {
     // Attempt to read GPS data
+    if(!gpsRec->waiting(5000)) {
+        spdlog::error("GPSD: No data from GPSD. Timeout.");
+        return nullptr;
+    }
     struct gps_data_t* gpsData;
     if((gpsData = gpsRec->read()) == nullptr) {
         spdlog::error("GPSD: No data from GPSD.");
