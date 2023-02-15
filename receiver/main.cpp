@@ -17,6 +17,7 @@ time_t lastRx = -1;
 std::vector<time_t> times;
 std::vector<sensor_data> sensors;
 std::vector<gps_pos> positions;
+std::vector<float> acceleration;
 std::vector<int> packetsReceived;
 std::vector<int> packetsLost;
 std::string json;
@@ -68,6 +69,15 @@ int main()
 		// Calculate packet loss
 		packetsLost.push_back(0);
 
+		// Calculate acceleration
+		if(positions.size() > 1) {
+			float accel = fabs(positions[positions.size()-1].velocity - positions[positions.size()-2].velocity);
+			acceleration.push_back(accel);
+			spdlog::info("Acceleration: {0:.1f}m/s^2", accel);
+		}
+		else
+			acceleration.push_back(0);
+
 		// Update the json with new data
     	nlohmann::json j;
     	for(int i = 0; i < sensors.size(); i++) { // Add data to the json file
@@ -77,6 +87,8 @@ int main()
             	for(int k = 0; k < 11; k++)
                 	if(sensors[i].battVolt <= chargeTable[k][0])
             	        j["packets"][i]["chargePcnt"] = chargeTable[k][1];
+			else
+				j["packets"][i]["chargePcnt"] = 0;
 
         	j["packets"][i]["time"] = times[i];
         	j["packets"][i]["timeMs"] = times[i]*1000;
@@ -91,6 +103,7 @@ int main()
 			j["packets"][i]["rxCount"] = packetsReceived[i];
 			j["packets"][i]["lostCount"] = packetsLost[i];
 			j["packets"][i]["index"] = packetsReceived[i] + packetsLost[i];
+			j["packets"][i]["acceleration"] = acceleration[i];
     	}
 		json = j.dump(4);
 	    printf("\n");
