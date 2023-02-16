@@ -26,8 +26,9 @@ VarInt16 mcuTemp("Avg_MMinusTemp", 536887528u, INT16_MIN, INT16_MAX, 0.1289, 527
 VarBool keySwitch("KeySwitch_Input", 536887440u);
 VarBool userSwitch("User1_Input", 536887448u);
 
-Var* infoVars[] = {  &Vars::model, &Vars::buildDate, &Vars::serialNum,
-                    &Vars::bootRev, &Vars::originalBootRev, &Vars::originalProgRev,
+Var* infoVars[] = {  
+    &Vars::model, &Vars::buildDate, &Vars::serialNum,
+    &Vars::bootRev, &Vars::originalBootRev, &Vars::originalProgRev,
 };
 
 Var* telemetryVars[] = { 

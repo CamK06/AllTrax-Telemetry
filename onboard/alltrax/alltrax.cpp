@@ -242,13 +242,26 @@ bool readSensors(sensor_data* sensors)
 {
     if(!readVars(Vars::telemetryVars, 6))
         return false;
+    if(!readVar(&Vars::keySwitch))
+        return false;
+    if(!readVar(&Vars::userSwitch))
+        return false;
+
+    // Get the throttle
+    sensors->throttle = Vars::throttlePos.convertToReal();
+    if(sensors->throttle < 0)
+        sensors->throttle = 0;
+    else if(sensors->throttle > 4095)
+        sensors->throttle = 4095;
 
     // Set the values in the output struct to the read data
     sensors->battVolt = Vars::battVoltage.convertToReal();
 	sensors->battCur = Vars::outputAmps.convertToReal() * (double)Vars::throttleLocal.getVal() / 4095.0;
-	sensors->throttle = 100.0 * Vars::throttlePos.convertToReal() / 4095.0;
+	sensors->throttle = 100.0 * sensors->throttle / 4095.0;
 	sensors->controlTemp = Vars::mcuTemp.convertToReal();
 	sensors->battTemp = Vars::battTemp.convertToReal();
+    sensors->userSwitch = Vars::userSwitch.getValue();
+    sensors->pwrSwitch = Vars::keySwitch.getValue();
     return true;
 }
 
@@ -259,6 +272,8 @@ void generateFakeData(sensor_data* sensors)
     sensors->throttle = fabs(cos(time(NULL)))*100;
     sensors->battTemp = 23.3+(cos(time(NULL))*2);
     sensors->controlTemp = 26.4+(sin(time(NULL))*4);
+    sensors->userSwitch = rand() > (RAND_MAX/2);
+    sensors->pwrSwitch = rand() > (RAND_MAX/2);
 }
 
 void startMonitor(int interval)

@@ -58,6 +58,7 @@ int main()
 		spdlog::debug("GPS: Lat: {0:.6f}, Long: {1:.6f}", gps.latitude, gps.longitude);
 		spdlog::debug("Power: {0:.1f}W", sensorData.battCur*sensorData.battVolt);
 		spdlog::debug("Velocity: {0:.1f}m/s", gps.velocity);
+		spdlog::debug("Key: {} Eco: {}", sensorData.pwrSwitch ? "ON" : "OFF", sensorData.userSwitch ? "ON" : "OFF");
 
 		// Save the data
 		sensors.push_back(sensorData);
@@ -104,6 +105,8 @@ int main()
 			j["packets"][i]["lostCount"] = packetsLost[i];
 			j["packets"][i]["index"] = packetsReceived[i] + packetsLost[i];
 			j["packets"][i]["acceleration"] = acceleration[i];
+			j["packets"][i]["userSw"] = sensors[i].userSwitch;
+			j["packets"][i]["keySw"] = sensors[i].pwrSwitch;
     	}
 		json = j.dump(4);
 	    printf("\n");

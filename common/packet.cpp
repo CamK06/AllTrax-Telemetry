@@ -12,11 +12,11 @@ Packets will always be 64bytes long
 | = 0xeaff, separator sequence, 2bytes
 TEMP = Average between battery and motor temperature
 
-----------------------------------------------------------------------------
-|8byte|  4bytes   |  4bytes  |     2byte     |4bytes|  16bytes  |  16bytes 
-----------------------------------------------------------------------------
-|[TIME]|[BATTVOLTS]|[BATTAMPS]|[THROTTLEPCNT]|[TEMP]|[LAT]|[LONG]|[VELOCITY]
-----------------------------------------------------------------------------
+---------------------------------------------------------------------------------------
+|8byte|  4bytes   |  4bytes  |     2byte     |4bytes|  16bytes  |  16bytes    2bytes
+---------------------------------------------------------------------------------------
+|[TIME]|[BATTVOLTS]|[BATTAMPS]|[THROTTLEPCNT]|[TEMP]|[LAT]|[LONG]|[VELOCITY][USR][KEY]|
+---------------------------------------------------------------------------------------
 
 */
 
@@ -37,6 +37,8 @@ void decodePacket(unsigned char* data, sensor_data* sensors, gps_pos* gps, time_
     memcpy(&gps->latitude, data+32, sizeof(double));
     memcpy(&gps->longitude, data+42, sizeof(double));
     memcpy(&gps->velocity, data+52, sizeof(double));
+    sensors->userSwitch = data[60];
+    sensors->pwrSwitch = data[61];
 }
 
 void formatPacket(sensor_data* sensors, gps_pos* gps, unsigned char** outData)
@@ -81,9 +83,11 @@ void formatPacket(sensor_data* sensors, gps_pos* gps, unsigned char** outData)
     // Velocity
     memcpy((*outData)+52, &gps->velocity, sizeof(double));
 
-    // Footer (yes, I added two extra bytes because 64 is a nice number)
-    (*outData)[60] = SEPARATOR_A;
-    (*outData)[61] = SEPARATOR_B;
+    // Switches
+    (*outData)[60] = sensors->userSwitch;
+    (*outData)[61] = sensors->pwrSwitch;
+
+    // Footer
     (*outData)[62] = SEPARATOR_A;
     (*outData)[63] = SEPARATOR_B;
 }

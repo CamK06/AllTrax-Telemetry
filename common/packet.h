@@ -12,6 +12,8 @@ struct sensor_data
 	float battCur;
 	float battTemp;
 	float controlTemp;
+	bool userSwitch;
+	bool pwrSwitch;
 };
 typedef void (*mcu_mon_callback_t)(sensor_data* sensors);
 
