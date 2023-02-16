@@ -11,8 +11,6 @@
 #include <signal.h>
 #include <vector>
 
-std::vector<sensor_data*> sensorHistory;
-std::vector<gps_pos*> gpsHistory;
 int monCalls = 0;
 unsigned char* outData = nullptr;
 
@@ -38,18 +36,14 @@ void monitor_callback(sensor_data* sensors)
 #ifndef USE_FAKE_CONTROLLER
 	pos = GPS::getPosition();
 #else 
-	pos->latitude = sin(random())*85;
-	pos->longitude = cos(random())*80;
-	pos->velocity = fabs((sin(random()*10)*cos(random()*20))*35);
+ 	pos->latitude = sin(random())*85;
+ 	pos->longitude = cos(random())*80;
+ 	pos->velocity = fabs((sin(random()*10)*cos(random()*20))*35);
 #endif
-
-	// Add packet to history, for later json exporting
-	sensorHistory.push_back(sensors);
-	gpsHistory.push_back(pos);
 
 	// If we don't have any data, create a new buffer by copying the first packet 300 times
 	if(outData == nullptr) {
-		outData = new unsigned char[300*64]; // 5 minute worth of data
+		outData = new unsigned char[300*64]; // 5 minutes worth of data
 		unsigned char* data = new unsigned char[64];
 		Telemetry::formatPacket(sensors, pos, &data);
 		for(int i = 0; i < 300; i++)

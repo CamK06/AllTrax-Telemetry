@@ -286,7 +286,6 @@ void monitorWorker()
         rxCallback(sensors);
         std::this_thread::sleep_for(std::chrono::seconds(monDelay));
     }
-    free(sensors);
 }
 
 void cleanup()
