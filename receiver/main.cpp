@@ -1,6 +1,7 @@
 #include "httplib.h"
 #include "radio.h"
 #include "gps.h"
+#include "version.h"
 
 #include <spdlog/spdlog.h>
 #include <nlohmann/json.hpp>
@@ -10,7 +11,6 @@
 #define SERIAL_PORT "/dev/ttyUSB0"
 #define HTTP_IP "0.0.0.0"
 #define HTTP_PORT 8000
-#define PACKET_INTERVAL 3 // Seconds, used for calculating packet loss
 
 // Data
 time_t lastRx = -1;
@@ -41,6 +41,7 @@ const float chargeTable[11][2] = {
 
 int main()
 {
+	spdlog::info("Telemetry Receiver v{}", VERSION);
 	spdlog::set_level(spdlog::level::debug);
     Radio::init(SERIAL_PORT, true);
     Radio::setRxCallback([](sensor_data sensorData, gps_pos gps, time_t timestamp) {
@@ -74,7 +75,7 @@ int main()
 		if(positions.size() > 1) {
 			float accel = fabs(positions[positions.size()-1].velocity - positions[positions.size()-2].velocity);
 			acceleration.push_back(accel);
-			spdlog::info("Acceleration: {0:.1f}m/s^2", accel);
+			spdlog::debug("Acceleration: {0:.1f}m/s^2", accel);
 		}
 		else
 			acceleration.push_back(0);
@@ -100,7 +101,7 @@ int main()
         	j["packets"][i]["power"] = sensors[i].battCur*sensors[i].battVolt;
         	j["packets"][i]["lat"] = positions[i].latitude;
         	j["packets"][i]["long"] = positions[i].longitude;
-			j["packets"][i]["velocity"] = positions[i].velocity;
+			j["packets"][i]["velocity"] = positions[i].velocity*3.6;
 			j["packets"][i]["rxCount"] = packetsReceived[i];
 			j["packets"][i]["lostCount"] = packetsLost[i];
 			j["packets"][i]["index"] = packetsReceived[i] + packetsLost[i];

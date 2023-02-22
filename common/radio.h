@@ -2,7 +2,6 @@
 
 #include "packet.h"
 #include "gps.h"
-#define USE_IP
 
 typedef void (*radio_rx_callback_t)(sensor_data sensors, gps_pos gps, time_t timestamp);
 

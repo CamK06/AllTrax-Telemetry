@@ -1,4 +1,5 @@
 #include "radio.h"
+#include "version.h"
 
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -69,21 +70,25 @@ void receiveData(int sig)
 {
     // Wait for 0.1s before continuing to read, to allow all
     // bytes to come through the port before reading
-    usleep(200000);
-    unsigned char* packet = new unsigned char[64*300];
+    usleep(1000000);
+    unsigned char* packet = new unsigned char[PKT_LEN*PKT_BURST];
 
-    // Read 64 bytes from the radio
-    int nr = read(radiofd, packet, 64*300);
+    // Read PKT_LEN*PKT_BURST bytes from the radio
+    int nr = read(radiofd, packet, PKT_LEN*PKT_BURST);
+    int packetsToDecode = PKT_BURST;
     if(nr < 0) {
         spdlog::debug("Double read attempted!");
         return;
     }
-    else if(nr != 64*300) {
-        spdlog::warn("Received {} bytes, expected {}", nr, 64*300);
+    else if(nr != PKT_LEN*PKT_BURST && nr < PKT_LEN) {
+        spdlog::warn("Received {} bytes, expected {}", nr, PKT_LEN*PKT_BURST);
         rxErrors++;
-        if(nr < (64*300)-2)
-            return;
+        return;
+        //if(nr < (PKT_LEN*PKT_BURST)-2)
+        //    return;
     }
+    if(nr != PKT_LEN*PKT_BURST && nr > PKT_LEN)
+        packetsToDecode = 1;
     rxPackets++;
 
     // Print RX statistics, this may be removed later
@@ -92,11 +97,11 @@ void receiveData(int sig)
     spdlog::info("RX percent error: {0:.1f}%", (rxErrors*1.0f/(rxErrors+rxPackets)) * 100.0f);
 
     // Decode the packets
-    for(int i = 0; i < 300; i++) {
+    for(int i = 0; i < packetsToDecode; i++) {
         sensor_data sensors = sensor_data();
         gps_pos gps = gps_pos();
         time_t timestamp = 0;
-        Telemetry::decodePacket(packet+(i*64), &sensors, &gps, &timestamp);
+        Telemetry::decodePacket(packet+(i*PKT_LEN), &sensors, &gps, &timestamp);
         
         // Send decoded packet to RX callback
         if(rxCallback != nullptr)
@@ -191,13 +196,13 @@ void init(const char* port, bool client)
     tty.c_cflag &= ~CRTSCTS;
     tty.c_lflag &= ~ICANON;
     tty.c_lflag &= ~IEXTEN;
-    // tty.c_lflag &= ~ECHO;
-    // tty.c_lflag &= ~ECHOE; 
-    // tty.c_lflag &= ~ECHONL;
-    // tty.c_lflag &= ~ISIG;
-    // tty.c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL);
-    // tty.c_oflag &= ~OPOST;
-    // tty.c_oflag &= ~ONLCR;
+    tty.c_lflag &= ~ECHO;
+    tty.c_lflag &= ~ECHOE; 
+    tty.c_lflag &= ~ECHONL;
+    tty.c_lflag &= ~ISIG;
+    tty.c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL);
+    tty.c_oflag &= ~OPOST;
+    tty.c_oflag &= ~ONLCR;
 
     // Apply options
     if(tcsetattr(radiofd, TCSANOW, &tty) != 0) {
@@ -205,17 +210,20 @@ void init(const char* port, bool client)
         return;
     }
 #endif
-    // Set port to non-blocking RX
-    int flags = fcntl(radiofd, F_GETFL, 0);
-    fcntl(radiofd, F_SETFL, flags | O_NONBLOCK | O_ASYNC);
     
     // Set up the receive signal/callback
     // This MIGHT need to be disabled in the tx program
+    //if(isClient) {
+    // Set port to non-blocking RX
+    int flags = fcntl(radiofd, F_GETFL, 0);
+    fcntl(radiofd, F_SETFL, flags | O_NONBLOCK | O_ASYNC);
+
     signal(SIGIO, receiveData);
     if(fcntl(radiofd, F_SETOWN, getpid()) < 0) {
         spdlog::error("Error setting sigio handler");
         return;
     }
+    //}
 
     spdlog::info("Opened port {}", serialPort);
 }

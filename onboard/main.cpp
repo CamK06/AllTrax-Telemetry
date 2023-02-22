@@ -1,5 +1,3 @@
-#define USE_FAKE_CONTROLLER true
-
 #include "alltrax/alltrax.h"
 #include "packet.h"
 #include "radio.h"
@@ -33,38 +31,38 @@ void monitor_callback(sensor_data* sensors)
 	
 	// Get GPS position or fake it
 	gps_pos* pos = (gps_pos*)malloc(sizeof(gps_pos));
-#ifndef USE_FAKE_CONTROLLER
-	pos = GPS::getPosition();
-#else 
+//#ifndef USE_FAKE_CONTROLLER
+//	pos = GPS::getPosition();
+//#else 
  	pos->latitude = sin(random())*85;
  	pos->longitude = cos(random())*80;
  	pos->velocity = fabs((sin(random()*10)*cos(random()*20))*35);
-#endif
+//#endif
 
-	// If we don't have any data, create a new buffer by copying the first packet 300 times
+	// If we don't have any data, create a new buffer by copying the first packet PKT_BURST times
 	if(outData == nullptr) {
-		outData = new unsigned char[300*64]; // 5 minutes worth of data
-		unsigned char* data = new unsigned char[64];
+		outData = new unsigned char[PKT_BURST*PKT_LEN];
+		unsigned char* data = new unsigned char[PKT_LEN];
 		Telemetry::formatPacket(sensors, pos, &data);
-		for(int i = 0; i < 300; i++)
-			memcpy(outData+(i*64), data, 64);
+		for(int i = 0; i < PKT_BURST; i++)
+			memcpy(outData+(i*PKT_LEN), data, PKT_LEN);
 		delete data;
 	}
 	else {
-		// Shift all packets up 64 bytes
-		unsigned char* tmp = new unsigned char[300*64];
-		memcpy(tmp+64, outData, 299*64);
-		memcpy(outData, tmp, 300*64);
+		// Shift all packets up to give room for the new packet
+		unsigned char* tmp = new unsigned char[PKT_BURST*PKT_LEN];
+		memcpy(tmp+PKT_LEN, outData, (PKT_BURST-1)*PKT_LEN);
+		memcpy(outData, tmp, PKT_BURST*PKT_LEN);
 		delete tmp;
 
 		// Add new packet to beginning
 		Telemetry::formatPacket(sensors, pos, &outData);
 	}
 
-	// Send past 5 minutes of packets every 3 seconds
-	if(++monCalls == 3) {
-		Util::dumpHex(outData, 300*64);
-		Radio::sendData(outData, 300*64);
+	// Send past packet burst every 3 seconds
+	if(++monCalls == TX_RATE) {
+		Util::dumpHex(outData, PKT_BURST*PKT_LEN);
+		Radio::sendData(outData, PKT_BURST*PKT_LEN);
 		monCalls = 0;
 	}
 	delete pos;
@@ -86,7 +84,7 @@ int main()
 	if(!Alltrax::initMotorController(true))
 #endif
 		return -1;
-	Alltrax::startMonitor(1);
+	Alltrax::startMonitor(PKT_RATE);
 	while(Alltrax::monThreadRunning);
 
 	Alltrax::cleanup();
