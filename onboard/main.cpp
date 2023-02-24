@@ -1,7 +1,7 @@
-#include "alltrax/alltrax.h"
-#include "packet.h"
-#include "radio.h"
 #include "version.h"
+#include "alltrax/alltrax.h"
+#include "link.h"
+#include "packet.h"
 #include "util.h"
 #include "gps.h"
 
@@ -31,13 +31,13 @@ void monitor_callback(sensor_data* sensors)
 	
 	// Get GPS position or fake it
 	gps_pos* pos = (gps_pos*)malloc(sizeof(gps_pos));
-//#ifndef USE_FAKE_CONTROLLER
-//	pos = GPS::getPosition();
-//#else 
+#ifndef USE_FAKE_CONTROLLER
+	pos = GPS::getPosition();
+#else 
  	pos->latitude = sin(random())*85;
  	pos->longitude = cos(random())*80;
  	pos->velocity = fabs((sin(random()*10)*cos(random()*20))*35);
-//#endif
+#endif
 
 	// If we don't have any data, create a new buffer by copying the first packet PKT_BURST times
 	if(outData == nullptr) {
@@ -62,7 +62,7 @@ void monitor_callback(sensor_data* sensors)
 	// Send past packet burst every 3 seconds
 	if(++monCalls == TX_RATE) {
 		Util::dumpHex(outData, PKT_BURST*PKT_LEN);
-		Radio::sendData(outData, PKT_BURST*PKT_LEN);
+		TLink::sendData(outData, PKT_BURST*PKT_LEN, TLink::DataType::Sensor, false);
 		monCalls = 0;
 	}
 	delete pos;
@@ -74,7 +74,7 @@ int main()
 	spdlog::info("HIDAPI " HID_API_VERSION_STR);
 	spdlog::set_level(spdlog::level::debug);
 
-	Radio::init("/dev/ttyUSB0");
+	TLink::init("/dev/ttyUSB1");
 	GPS::init();
 
 	Alltrax::setMonitorCallback(&monitor_callback);

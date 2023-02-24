@@ -1,7 +1,8 @@
 #include "httplib.h"
-#include "radio.h"
+#include "link.h"
 #include "gps.h"
 #include "version.h"
+#include "packet.h"
 
 #include <spdlog/spdlog.h>
 #include <nlohmann/json.hpp>
@@ -43,8 +44,14 @@ int main()
 {
 	spdlog::info("Telemetry Receiver v{}", VERSION);
 	spdlog::set_level(spdlog::level::debug);
-    Radio::init(SERIAL_PORT, true);
-    Radio::setRxCallback([](sensor_data sensorData, gps_pos gps, time_t timestamp) {
+    TLink::init(SERIAL_PORT, true);
+    TLink::setRxCallback([](unsigned char* data, int len) {
+
+		// Decode the packet
+		sensor_data sensorData;
+		gps_pos gps;
+		time_t timestamp;
+		Telemetry::decodePacket(data, &sensorData, &gps, &timestamp);
 
 		// Check if times has the timestamp already, i.e. we've already seen this packet
 		if(std::find(times.begin(), times.end(), timestamp) != times.end())

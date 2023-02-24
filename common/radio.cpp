@@ -1,5 +1,4 @@
 #include "radio.h"
-#include "version.h"
 
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -15,34 +14,18 @@
 namespace Radio
 {
 
-// Serial port
 int radiofd = -1;
 char* serialPort = nullptr;
-
-// TX/RX stats
-int rxPackets = 0;
+radio_rx_callback_t rxCB = nullptr;
 int txErrors = 0;
-int rxErrors = 0;
-
 bool isClient = false;
-radio_rx_callback_t rxCallback = nullptr;
 
-// This can probably be deleted as we're doing bulk packet sending now
-void sendSensors(sensor_data* sensors, gps_pos* gps)
-{
-    // Format and send a packet with the sensor data
-    unsigned char* packet = new unsigned char[64];
-    Telemetry::formatPacket(sensors, gps, &packet);
-    sendData(packet, 64);
-    delete packet;
-}
-
-void sendData(unsigned char* data, int len)
+int sendData(unsigned char* data, int len)
 {
     // Exit if the fd isn't set/radio isn't open
     if(radiofd < 0) {
         spdlog::error("Failed to send packet! Radio is not open.");
-        return;
+        return -1;
     }
 
     // Write the data to the radio socket
@@ -55,68 +38,21 @@ void sendData(unsigned char* data, int len)
         if(txErrors >= 3) {
             ::close(radiofd);
             radiofd = -1;
-	        rxErrors = 0;
-	        rxPackets = 0;
             txErrors = 0;
             spdlog::error("Too many packets failed to send; giving up.");
-            init(serialPort, isClient);
+            init(serialPort, rxCB, isClient);
         }
-        return;
+        return -1;
     }
     spdlog::debug("Successfully sent {} bytes", len);
+    return 0;
 }
 
-void receiveData(int sig)
-{
-    // Wait for 0.1s before continuing to read, to allow all
-    // bytes to come through the port before reading
-    usleep(1000000);
-    unsigned char* packet = new unsigned char[PKT_LEN*PKT_BURST];
-
-    // Read PKT_LEN*PKT_BURST bytes from the radio
-    int nr = read(radiofd, packet, PKT_LEN*PKT_BURST);
-    int packetsToDecode = PKT_BURST;
-    if(nr < 0) {
-        spdlog::debug("Double read attempted!");
-        return;
-    }
-    else if(nr != PKT_LEN*PKT_BURST && nr < PKT_LEN) {
-        spdlog::warn("Received {} bytes, expected {}", nr, PKT_LEN*PKT_BURST);
-        rxErrors++;
-        return;
-        //if(nr < (PKT_LEN*PKT_BURST)-2)
-        //    return;
-    }
-    if(nr != PKT_LEN*PKT_BURST && nr > PKT_LEN)
-        packetsToDecode = 1;
-    rxPackets++;
-
-    // Print RX statistics, this may be removed later
-    spdlog::info("Received {} bytes", nr);
-    spdlog::info("Non-critical RX errors: {}", rxErrors);
-    spdlog::info("RX percent error: {0:.1f}%", (rxErrors*1.0f/(rxErrors+rxPackets)) * 100.0f);
-
-    // Decode the packets
-    for(int i = 0; i < packetsToDecode; i++) {
-        sensor_data sensors = sensor_data();
-        gps_pos gps = gps_pos();
-        time_t timestamp = 0;
-        Telemetry::decodePacket(packet+(i*PKT_LEN), &sensors, &gps, &timestamp);
-        
-        // Send decoded packet to RX callback
-        if(rxCallback != nullptr)
-            rxCallback(sensors, gps, timestamp);
-    }
-    
-    // Cleanup; delete the rx buffer and flush the serial port
-    delete packet;
-    tcflush(radiofd, TCIFLUSH);
-}
-
-void init(const char* port, bool client)
+void init(const char* port, radio_rx_callback_t rxCallback, bool client)
 {
 	serialPort = (char*)port;
     isClient = client;
+    rxCB = rxCallback;
 
 #ifdef USE_IP
     radiofd = socket(AF_INET, SOCK_STREAM, 0);
@@ -218,7 +154,7 @@ void init(const char* port, bool client)
     int flags = fcntl(radiofd, F_GETFL, 0);
     fcntl(radiofd, F_SETFL, flags | O_NONBLOCK | O_ASYNC);
 
-    signal(SIGIO, receiveData);
+    signal(SIGIO, rxHandler);
     if(fcntl(radiofd, F_SETOWN, getpid()) < 0) {
         spdlog::error("Error setting sigio handler");
         return;
@@ -228,14 +164,16 @@ void init(const char* port, bool client)
     spdlog::info("Opened port {}", serialPort);
 }
 
-void close()
+void rxHandler(int sigrxCallback)
 {
-    ::close(radiofd);
+    if(rxCB == nullptr) {
+        spdlog::error("RX callback is not set!");
+        return;
+    }
+
+    rxCB(radiofd);
 }
 
-void setRxCallback(radio_rx_callback_t callback)
-{
-    rxCallback = callback;
-}
+void close() { ::close(radiofd); }
 
 }
