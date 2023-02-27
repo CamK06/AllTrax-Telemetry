@@ -12,6 +12,7 @@ link_rx_callback_t rxCB = nullptr;
 bool awaitingAck = false;
 int alreadyRead = 0;
 unsigned char* incomingData = nullptr;
+int framesLost = 0;
 
 void radioRxCallback(int radiofd)
 {
@@ -49,6 +50,7 @@ void radioRxCallback(int radiofd)
         delete[] incomingData;
         incomingData = nullptr;
         tcflush(radiofd, TCIOFLUSH);
+        framesLost++;
         return;
     }
 
@@ -56,6 +58,7 @@ void radioRxCallback(int radiofd)
     Frame frame;
     if(decodeFrame(incomingData, alreadyRead, &frame) < 0) {
         spdlog::error("Failed to decode frame!");
+        framesLost++;
         return;
     }
 

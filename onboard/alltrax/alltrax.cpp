@@ -27,6 +27,7 @@ bool initMotorController(bool useFakeData)
     if(!useFakeData) {
         spdlog::info("Searching for motor controller...");
         hid_init();
+        
         motorController = hid_open(ALLTRAX_VID, ALLTRAX_PID, NULL);
         if(!motorController) {
             spdlog::error("Controller not found!");
@@ -176,14 +177,14 @@ bool readVars(Var** vars, int varCount)
                     varData[l] += data[start+l*var->getNumBytes()+k] << (k*8);
             }
             var->setValue(varData, var->getArrayLen());
-            delete varData;
+            delete[] varData;
         }
         toRead = 0;
         for(int j = 0; j < varCount; j++)
             alreadyRead[j] = -1;
     }
-    delete varsToRead;
-    delete alreadyRead;
+    delete[] varsToRead;
+    delete[] alreadyRead;
     return true;
 }
 
@@ -288,7 +289,7 @@ void monitorWorker()
         rxCallback(sensors);
         std::this_thread::sleep_for(std::chrono::seconds(monDelay));
     }
-    delete sensors;
+    delete[] sensors;
 }
 
 void cleanup()

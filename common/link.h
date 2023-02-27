@@ -41,6 +41,8 @@ typedef void (*link_rx_callback_t)(unsigned char* data, int len);
 namespace TLink
 {
 
+extern int framesLost;
+
 enum DataType
 {
     Sensor, Computer, Command, Response

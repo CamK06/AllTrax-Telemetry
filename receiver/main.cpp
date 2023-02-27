@@ -76,7 +76,7 @@ int main()
 		packetsReceived.push_back(++totalRx);
 		
 		// Calculate packet loss
-		packetsLost.push_back(0);
+		packetsLost.push_back(TLink::framesLost);
 
 		// Calculate acceleration
 		if(positions.size() > 1) {
@@ -113,8 +113,8 @@ int main()
 			j["packets"][i]["lostCount"] = packetsLost[i];
 			j["packets"][i]["index"] = packetsReceived[i] + packetsLost[i];
 			j["packets"][i]["acceleration"] = acceleration[i];
-			j["packets"][i]["userSw"] = sensors[i].userSwitch;
-			j["packets"][i]["keySw"] = sensors[i].pwrSwitch;
+			j["packets"][i]["userSw"] = sensors[i].userSwitch ? 1 : 0;
+			j["packets"][i]["keySw"] = sensors[i].pwrSwitch ? 1 : 0;
     	}
 		json = j.dump(4);
 	    printf("\n");
