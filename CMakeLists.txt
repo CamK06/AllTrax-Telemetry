@@ -8,7 +8,7 @@ find_package(ZLIB)
 find_package(PkgConfig REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(GPS REQUIRED)
-include_directories(${ZLIB_INCLUDE_DIRS} ${SPDLOG_INCLUDE_DIR} ${HIDAPI_INCLUDE_DIRS} ${GPS_INCLUDE_DIR} common)
+include_directories(${ZLIB_INCLUDE_DIRS} ${SPDLOG_INCLUDE_DIR} ${HIDAPI_INCLUDE_DIRS} ${GPS_INCLUDE_DIR} common thirdparty/flog/lib)
 
 add_subdirectory(onboard)
 add_subdirectory(receiver)

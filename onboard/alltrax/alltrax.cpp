@@ -21,17 +21,17 @@ bool initMotorController(bool useFakeData)
 {
     // Warn the user if the receive callback has not been set
     if(rxCallback == nullptr)
-        spdlog::warn("Receive callback is not set! No data will be received from the motor controller!");
+        flog::warn("Receive callback is not set! No data will be received from the motor controller!");
 
     // Attempt to open the motor controller from its VID and PID
     if(!useFakeData) {
-        spdlog::info("Searching for motor controller...");
+        flog::info("Searching for motor controller...");
         hid_init();
         
         motorController = hid_open(ALLTRAX_VID, ALLTRAX_PID, NULL);
         if(!motorController) {
-            spdlog::error("Controller not found!");
-            spdlog::error("Exiting...");
+            flog::error("Controller not found!");
+            flog::error("Exiting...");
             hid_exit();
             return false;
         }
@@ -75,7 +75,7 @@ bool sendData(char reportID, uint addressFunction, unsigned char* data, unsigned
         for(int i = 0; i < length; i++)
             packet[i+1] = data[i];
 
-    spdlog::debug("Packet sent:");
+    flog::debug("Packet sent:");
     for(int i = 0; i < 64; i++) {
 		printf("%02X ", packet[i]);
 		if(i == 15 || i == 31 || i == 47)
@@ -95,16 +95,16 @@ bool getInfo()
     bool result = false;
     if(!fakeData) {
         result = readVars(Vars::infoVars, 6);
-        spdlog::debug("Motor controller model: {}", Vars::model.getValue());
-        spdlog::debug("Motor controller build date: {}", Vars::buildDate.getValue());
-        spdlog::debug("Motor controller serial number: {}", Vars::serialNum.getVal());
-        spdlog::debug("Motor controller boot revision: {}", Vars::bootRev.convertToReal());
-        spdlog::debug("Motor controller program type: {}", Vars::programType.convertToReal());
-        spdlog::debug("Motor controller hardware revision: {}", Vars::hardwareRev.getVal());
+        flog::debug("Motor controller model: {}", Vars::model.getValue());
+        flog::debug("Motor controller build date: {}", Vars::buildDate.getValue());
+        flog::debug("Motor controller serial number: {}", Vars::serialNum.getVal());
+        flog::debug("Motor controller boot revision: {}", Vars::bootRev.convertToReal());
+        flog::debug("Motor controller program type: {}", Vars::programType.convertToReal());
+        flog::debug("Motor controller hardware revision: {}", Vars::hardwareRev.getVal());
     }
     else {
         result = true;
-        spdlog::debug("Running fake motor contoller");
+        flog::debug("Running fake motor contoller");
     }
     return result;
 }
@@ -121,7 +121,7 @@ bool readVars(Var** vars, int varCount)
     for(int i = 0; i < varCount; i++)
         for(int j = i+1; j < varCount; j++)
             if(vars[i]->getAddr() == vars[j]->getAddr())
-                spdlog::warn("Variable '{}' read twice in readVars call", vars[i]->getName());
+                flog::warn("Variable '{}' read twice in readVars call", vars[i]->getName());
     
     // Iterate through each variable to read, if we're reading more than one variable
     for(int i = 0; i < varCount; i++) {
@@ -157,7 +157,7 @@ bool readVars(Var** vars, int varCount)
         unsigned char* data = new unsigned char[lastByte-vars[i]->getAddr()];
         bool result = readAddress(vars[i]->getAddr(), lastByte-vars[i]->getAddr(), &data);
         if(!result) {
-            spdlog::error("Failed to read variable {} from motor controller!", vars[i]->getName());
+            flog::error("Failed to read variable {} from motor controller!", vars[i]->getName());
             return result;
         }
 
@@ -196,8 +196,8 @@ bool readVar(Var* var)
 
 bool readAddress(uint32_t addr, uint numBytes, unsigned char** outData)
 {
-    spdlog::debug("Reading address 0x{0:x} from controller...", addr);
-    spdlog::debug("Bytes to read {}", numBytes);
+    flog::debug("Reading address 0x{0:x} from controller...", addr);
+    flog::debug("Bytes to read {}", numBytes);
 
     // Read the bytes in groups of 56bytes
     int i = 0;
@@ -222,7 +222,7 @@ bool readAddress(uint32_t addr, uint numBytes, unsigned char** outData)
         i++;
     }
 
-    spdlog::debug("Successfully read {} bytes from 0x{:x}", numBytes, addr);
+    flog::debug("Successfully read {} bytes from 0x{:x}", numBytes, addr);
     return true;
 }
 

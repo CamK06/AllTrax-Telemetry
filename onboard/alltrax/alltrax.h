@@ -1,6 +1,6 @@
 #pragma once
 
-#include <spdlog/spdlog.h>
+#include <flog.h>
 #include <hidapi/hidapi.h>
 #include "alltraxvars.h"
 #include "packet.h"

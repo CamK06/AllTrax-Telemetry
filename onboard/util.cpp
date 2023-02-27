@@ -1,6 +1,5 @@
 #include "util.h"
 #include <iostream>
-#include <spdlog/spdlog.h>
 
 namespace Util
 {

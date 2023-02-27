@@ -2,7 +2,7 @@
 #include "radio.h"
 #include <string.h>
 #include <termios.h>
-#include <spdlog/spdlog.h>
+#include <flog.h>
 #include <zlib.h>
 
 namespace TLink {
@@ -22,13 +22,13 @@ void radioRxCallback(int radiofd)
     unsigned char data[MAX_PKT_LEN];
     int len = read(radiofd, data, MAX_PKT_LEN);
     if(len < 0) {
-        spdlog::error("Failed to read from radio!");
+        flog::error("Failed to read from radio!");
         return;
     }
 
     // Check for framing characters
     if(data[0] != FLAG && incomingData == nullptr) {
-        spdlog::error("Invalid frame!");
+        flog::error("Invalid frame!");
         return;
     }
 
@@ -45,7 +45,7 @@ void radioRxCallback(int radiofd)
 
     // Check for stop flag, give up if not found
     if(incomingData[alreadyRead-1] != FLAG) {
-        spdlog::error("Invalid frame!");
+        flog::error("Invalid frame!");
         alreadyRead = 0;
         delete[] incomingData;
         incomingData = nullptr;
@@ -57,7 +57,7 @@ void radioRxCallback(int radiofd)
     // Decode the frame
     Frame frame;
     if(decodeFrame(incomingData, alreadyRead, &frame) < 0) {
-        spdlog::error("Failed to decode frame!");
+        flog::error("Failed to decode frame!");
         framesLost++;
         return;
     }
@@ -66,7 +66,7 @@ void radioRxCallback(int radiofd)
     if(frame.needsAck) {
         unsigned char ack = 0xff;
         if(sendData(&ack, 1, DataType::Response, false) < 0) {
-            spdlog::error("Failed to send ack!");
+            flog::error("Failed to send ack!");
             return;
         }
     }
@@ -97,7 +97,7 @@ int sendData(unsigned char* data, int len, DataType dataType, bool requireAck)
     unsigned char* outData = new unsigned char[10+len];
     int frameLen = formatFrame(&frame, &outData);
     if(frameLen < 0) {
-        spdlog::error("Failed to format frame!");
+        flog::error("Failed to format frame!");
         return -1;
     }
 
@@ -134,7 +134,7 @@ int decodeFrame(unsigned char* data, int len, Frame* outFrame)
 {
     // Verify frame start and stop flags
     if(data[0] != FLAG || data[len-1] != FLAG) {
-        spdlog::error("Invalid frame! Start/Stop flag missing.");
+        flog::error("Invalid frame! Start/Stop flag missing.");
         return -1;
     }
 
@@ -143,7 +143,7 @@ int decodeFrame(unsigned char* data, int len, Frame* outFrame)
     uint32_t fcs;
     memcpy(&fcs, data+len-5, 4);
     if(crc != fcs) {
-        spdlog::error("Invalid frame! FCS does not match.");
+        flog::error("Invalid frame! FCS does not match.");
         return -1;
     }
 

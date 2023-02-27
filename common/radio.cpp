@@ -9,7 +9,8 @@
 #include <unistd.h>
 #include <termios.h>
 #include <errno.h>
-#include <spdlog/spdlog.h>
+#include <flog.h>
+#include <cstring>
 
 namespace Radio
 {
@@ -24,13 +25,13 @@ int sendData(unsigned char* data, int len)
 {
     // Exit if the fd isn't set/radio isn't open
     if(radiofd < 0) {
-        spdlog::error("Failed to send packet! Radio is not open.");
+        flog::error("Failed to send packet! Radio is not open.");
         return -1;
     }
 
     // Write the data to the radio socket
     if(write(radiofd, data, len) < 0) {
-        spdlog::error("Failed to send packet!");
+        flog::error("Failed to send packet!");
         txErrors++;
 
         // If we've failed to send more than 5 times, we've lost connection,
@@ -39,12 +40,12 @@ int sendData(unsigned char* data, int len)
             ::close(radiofd);
             radiofd = -1;
             txErrors = 0;
-            spdlog::error("Too many packets failed to send; giving up.");
+            flog::error("Too many packets failed to send; giving up.");
             init(serialPort, rxCB, isClient);
         }
         return -1;
     }
-    spdlog::debug("Successfully sent {} bytes", len);
+    flog::debug("Successfully sent {} bytes", len);
     return 0;
 }
 
@@ -57,7 +58,7 @@ void init(const char* port, radio_rx_callback_t rxCallback, bool client)
 #ifdef USE_IP
     radiofd = socket(AF_INET, SOCK_STREAM, 0);
     if(radiofd < 0) {
-        spdlog::error("Failed to open socket");
+        flog::error("Failed to open socket");
         return;
     }
 
@@ -70,47 +71,47 @@ void init(const char* port, radio_rx_callback_t rxCallback, bool client)
         int addrlen = sizeof(addr);
 
         if((servfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-            spdlog::error("Failed to open socket");
+            flog::error("Failed to open socket");
             return;
         }
 
         if(setsockopt(servfd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
-            spdlog::error("Failed to set socket options");
+            flog::error("Failed to set socket options");
             return;
         }
         addr.sin_addr.s_addr = INADDR_ANY;
         if(bind(servfd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
-            spdlog::error("Failed to bind socket");
+            flog::error("Failed to bind socket");
             return;
         }
 
-        spdlog::info("Listening for connections...");
+        flog::info("Listening for connections...");
         if(listen(servfd, 1) < 0) {
-            spdlog::error("Failed to listen on socket");
+            flog::error("Failed to listen on socket");
             return;
         }
         if((radiofd = accept(servfd, (struct sockaddr*)&addr, (socklen_t*)&addrlen)) < 0) {
-            spdlog::error("Failed to accept incoming connection");
+            flog::error("Failed to accept incoming connection");
             return;
         }
-        spdlog::info("Accepted connection");
+        flog::info("Accepted connection");
     }
     else {
         if(inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr) <= 0) {
-            spdlog::error("Invalid IP address");
+            flog::error("Invalid IP address");
             return;
         }
         if(connect(radiofd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-            spdlog::error("Failed connecting to server");
+            flog::error("Failed connecting to server");
             return;
         }
     }
 #else
     // Open the serial port
-    spdlog::info("Opening {}...", serialPort);
+    flog::info("Opening {}...", serialPort);
     radiofd = open(serialPort, O_RDWR | O_NOCTTY | O_SYNC);
     if(radiofd < 0) {
-        spdlog::error("Failed to open serial port");
+        flog::error("Failed to open serial port");
         return;
     }
 
@@ -118,7 +119,7 @@ void init(const char* port, radio_rx_callback_t rxCallback, bool client)
     struct termios tty;
     memset(&tty, 0, sizeof(tty));
     if(tcgetattr(radiofd, &tty) != 0) {
-        spdlog::error("Failed to get serial port attributes");
+        flog::error("Failed to get serial port attributes");
         return;
     }
     cfsetispeed(&tty, B57600);
@@ -142,7 +143,7 @@ void init(const char* port, radio_rx_callback_t rxCallback, bool client)
 
     // Apply options
     if(tcsetattr(radiofd, TCSANOW, &tty) != 0) {
-        spdlog::error("Failed to set serial port attributes");
+        flog::error("Failed to set serial port attributes");
         return;
     }
 #endif
@@ -156,18 +157,18 @@ void init(const char* port, radio_rx_callback_t rxCallback, bool client)
 
     signal(SIGIO, rxHandler);
     if(fcntl(radiofd, F_SETOWN, getpid()) < 0) {
-        spdlog::error("Error setting sigio handler");
+        flog::error("Error setting sigio handler");
         return;
     }
     //}
 
-    spdlog::info("Opened port {}", serialPort);
+    flog::info("Opened port {}", serialPort);
 }
 
 void rxHandler(int sigrxCallback)
 {
     if(rxCB == nullptr) {
-        spdlog::error("RX callback is not set!");
+        flog::error("RX callback is not set!");
         return;
     }
 

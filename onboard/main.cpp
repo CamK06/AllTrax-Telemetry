@@ -5,30 +5,16 @@
 #include "util.h"
 #include "gps.h"
 
-#include <spdlog/spdlog.h>
+#include <flog.h>
 #include <signal.h>
+#include <cstring>
 #include <vector>
 
 int monCalls = 0;
 unsigned char* outData = nullptr;
 
-void printSensors(sensor_data* sensors)
-{
-	// Battery
-	spdlog::debug("Battery Voltage: {0:.1f}V", sensors->battVolt);
-	spdlog::debug("Battery Current: {0:.1f}A", sensors->battCur);
-	
-	// Misc
-	spdlog::debug("Throttle: {}%", sensors->throttle);
-	spdlog::debug("Controller Temp: {0:.1f}C", sensors->controlTemp);
-	spdlog::debug("Battery Temp: {0:.1f}C",  sensors->battTemp);
-	printf("\n");	
-}
-
 void monitor_callback(sensor_data* sensors)
 {
-	printSensors(sensors);
-	
 	// Get GPS position or fake it
 	gps_pos* pos = (gps_pos*)malloc(sizeof(gps_pos));
 #ifndef USE_FAKE_CONTROLLER
@@ -70,9 +56,8 @@ void monitor_callback(sensor_data* sensors)
 
 int main()
 {
-	spdlog::info("AllTrax SR Telemetry TX " VERSION);
-	spdlog::info("HIDAPI " HID_API_VERSION_STR);
-	spdlog::set_level(spdlog::level::debug);
+	flog::info("AllTrax SR Telemetry TX " VERSION);
+	flog::info("HIDAPI " HID_API_VERSION_STR);
 
 	TLink::init("/dev/ttyUSB1");
 	GPS::init();
@@ -88,6 +73,6 @@ int main()
 	while(Alltrax::monThreadRunning);
 
 	Alltrax::cleanup();
-	spdlog::info("Exiting...");
+	flog::info("Exiting...");
 	return 0;
 }

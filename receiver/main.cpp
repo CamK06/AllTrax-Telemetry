@@ -4,7 +4,7 @@
 #include "version.h"
 #include "packet.h"
 
-#include <spdlog/spdlog.h>
+#include <flog.h>
 #include <nlohmann/json.hpp>
 #include <vector>
 #include <fstream>
@@ -42,8 +42,7 @@ const float chargeTable[11][2] = {
 
 int main()
 {
-	spdlog::info("Telemetry Receiver v{}", VERSION);
-	spdlog::set_level(spdlog::level::debug);
+	flog::info("Telemetry Receiver v{}", VERSION);
     TLink::init(SERIAL_PORT, true);
     TLink::setRxCallback([](unsigned char* data, int len) {
 
@@ -58,15 +57,15 @@ int main()
 			return;
 		
         // Debug logging
-	    spdlog::debug("Battery Voltage: {0:.1f}V", sensorData.battVolt);
-	    spdlog::debug("Battery Current: {0:.1f}A", sensorData.battCur);
-	    spdlog::debug("Throttle: {}%", sensorData.throttle);
-	    spdlog::debug("Controller Temp: {0:.1f}C", sensorData.controlTemp);
-	    spdlog::debug("Battery Temp: {0:.1f}C", sensorData.battTemp);
-		spdlog::debug("GPS: Lat: {0:.6f}, Long: {1:.6f}", gps.latitude, gps.longitude);
-		spdlog::debug("Power: {0:.1f}W", sensorData.battCur*sensorData.battVolt);
-		spdlog::debug("Velocity: {0:.1f}m/s", gps.velocity);
-		spdlog::debug("Key: {} Eco: {}", sensorData.pwrSwitch ? "ON" : "OFF", sensorData.userSwitch ? "ON" : "OFF");
+	    flog::debug("Battery Voltage: {0:.1f}V", sensorData.battVolt);
+	    flog::debug("Battery Current: {0:.1f}A", sensorData.battCur);
+	    flog::debug("Throttle: {}%", sensorData.throttle);
+	    flog::debug("Controller Temp: {0:.1f}C", sensorData.controlTemp);
+	    flog::debug("Battery Temp: {0:.1f}C", sensorData.battTemp);
+		flog::debug("GPS: Lat: {0:.6f}, Long: {1:.6f}", gps.latitude, gps.longitude);
+		flog::debug("Power: {0:.1f}W", sensorData.battCur*sensorData.battVolt);
+		flog::debug("Velocity: {0:.1f}m/s", gps.velocity);
+		flog::debug("Key: {} Eco: {}", sensorData.pwrSwitch ? "ON" : "OFF", sensorData.userSwitch ? "ON" : "OFF");
 
 		// Save the data
 		sensors.push_back(sensorData);
@@ -82,7 +81,7 @@ int main()
 		if(positions.size() > 1) {
 			float accel = fabs(positions[positions.size()-1].velocity - positions[positions.size()-2].velocity);
 			acceleration.push_back(accel);
-			spdlog::debug("Acceleration: {0:.1f}m/s^2", accel);
+			flog::debug("Acceleration: {0:.1f}m/s^2", accel);
 		}
 		else
 			acceleration.push_back(0);

@@ -1,3 +1,6 @@
 [submodule "receiver/cpp-httplib"]
 	path = receiver/cpp-httplib
 	url = https://github.com/yhirose/cpp-httplib
+[submodule "thirdparty/flog"]
+	path = thirdparty/flog
+	url = https://github.com/alexandrerouma/flog
