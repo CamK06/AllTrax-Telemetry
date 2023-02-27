@@ -5,17 +5,16 @@ namespace GPS
 {
 
 gpsmm* gpsRec;
+gps_pos* pos = nullptr; // Stores the last received position
 
 int init()
 {
-#ifndef USE_FAKE_CONTROLLER
     // Connect to gpsd
     gpsRec = new gpsmm("localhost", DEFAULT_GPSD_PORT);
     if(gpsRec->stream(WATCH_ENABLE | WATCH_JSON) == nullptr) {
         flog::error("GPSD: No GPSD running.");
         return false;;
     }
-#endif
     return true;
 }
 
@@ -32,12 +31,23 @@ gps_pos* getPosition()
         return nullptr;
     }
 
+    // Verify the incoming data, if invalid, return last data
+    if(gpsData->fix.latitude <= 0)
+        return pos;
+
     // Return the position
-    gps_pos* pos = new gps_pos;
+    if(pos == nullptr)
+        pos = new gps_pos;
     pos->latitude = gpsData->fix.latitude;
     pos->longitude = gpsData->fix.longitude;
     pos->velocity = gpsData->fix.speed;
     return pos;
+}
+
+void close()
+{
+    delete gpsRec;
+    delete pos;
 }
 
 }

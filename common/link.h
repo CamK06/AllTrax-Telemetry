@@ -62,6 +62,7 @@ void radioRxCallback(int radiofd);
 int sendData(unsigned char* data, int len, DataType dataType, bool requireAck);
 void setCarID(uint8_t id);
 void setRxCallback(link_rx_callback_t cb);
+void cleanup();
 
 // Lower level functions; not used directly by client
 

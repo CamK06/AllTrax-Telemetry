@@ -228,12 +228,8 @@ bool readAddress(uint32_t addr, uint numBytes, unsigned char** outData)
 
 bool readSensors(sensor_data* sensors)
 {
-    if(!readVars(Vars::telemetryVars, 6))
+    if(!readVars(Vars::telemetryVars, 8))
         return false;
-    //if(!readVar(&Vars::keySwitch))
-    //    return false;
-    //if(!readVar(&Vars::userSwitch))
-    //    return false;
 
     // Get the throttle
     sensors->throttle = Vars::throttlePos.convertToReal();
@@ -294,9 +290,7 @@ void monitorWorker()
 
 void cleanup()
 {
-    monThreadRunning = false;
-    if(monThread.joinable())
-        monThread.join();
+    stopMonitor();
     hid_close(motorController);
 }
 

@@ -157,4 +157,10 @@ int decodeFrame(unsigned char* data, int len, Frame* outFrame)
     return 0;
 }
 
+void cleanup()
+{
+    Radio::close();
+    delete[] incomingData;
+}
+
 }

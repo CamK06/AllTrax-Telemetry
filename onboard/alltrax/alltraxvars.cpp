@@ -33,6 +33,7 @@ Var* infoVars[] = {
 
 Var* telemetryVars[] = { 
     &Vars::battVoltage, &Vars::throttleLocal, &Vars::throttlePos,
-    &Vars::outputAmps, &Vars::battTemp, &Vars::mcuTemp
+    &Vars::outputAmps, &Vars::battTemp, &Vars::mcuTemp,
+    &Vars::keySwitch, &Vars::userSwitch
 };
 }

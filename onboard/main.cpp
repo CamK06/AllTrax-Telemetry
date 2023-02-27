@@ -10,6 +10,8 @@
 #include <cstring>
 #include <vector>
 
+#define SERIAL_PORT "/dev/ttyUSB0"
+
 int monCalls = 0;
 unsigned char* outData = nullptr;
 
@@ -17,7 +19,7 @@ void monitor_callback(sensor_data* sensors)
 {
 	// Get GPS position or fake it
 	gps_pos* pos = (gps_pos*)malloc(sizeof(gps_pos));
-#ifndef USE_FAKE_CONTROLLER
+#ifndef USE_FAKE_GPS
 	pos = GPS::getPosition();
 #else 
  	pos->latitude = sin(random())*85;
@@ -59,8 +61,10 @@ int main()
 	flog::info("AllTrax SR Telemetry TX " VERSION);
 	flog::info("HIDAPI " HID_API_VERSION_STR);
 
-	TLink::init("/dev/ttyUSB1");
+	TLink::init((char*)SERIAL_PORT);
+#ifndef USE_FAKE_GPS
 	GPS::init();
+#endif
 
 	Alltrax::setMonitorCallback(&monitor_callback);
 #ifndef USE_FAKE_CONTROLLER
@@ -73,6 +77,10 @@ int main()
 	while(Alltrax::monThreadRunning);
 
 	Alltrax::cleanup();
+	TLink::cleanup();
+#ifndef USE_FAKE_GPS
+	GPS::close();
+#endif
 	flog::info("Exiting...");
 	return 0;
 }

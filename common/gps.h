@@ -13,6 +13,7 @@ namespace GPS
 {
 
 int init();
+void close();
 gps_pos* getPosition();
 
 }

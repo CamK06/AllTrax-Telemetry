@@ -43,7 +43,7 @@ const float chargeTable[11][2] = {
 int main()
 {
 	flog::info("Telemetry Receiver v{}", VERSION);
-    TLink::init(SERIAL_PORT, true);
+    TLink::init((char*)SERIAL_PORT, true);
     TLink::setRxCallback([](unsigned char* data, int len) {
 
 		// Decode the packet
@@ -125,4 +125,8 @@ int main()
 		res.set_content(json, "application/json");
 	});
 	server.listen(HTTP_IP, HTTP_PORT);
+
+	// Cleanup
+	TLink::cleanup();
+	return 0;
 }
