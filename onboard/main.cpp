@@ -14,9 +14,24 @@
 
 int monCalls = 0;
 unsigned char* outData = nullptr;
+bool transmitting = false;
+
+void radio_callback(unsigned char* data, int len, TLink::DataType type)
+{
+	if(type != TLink::DataType::Command)
+		return;
+
+	// Decode the command
+	if(memcmp(data, "TOGGLE", len) == 0)
+		transmitting = !transmitting;
+}
 
 void monitor_callback(sensor_data* sensors)
 {
+	// Don't transmit unless the receiver has told us to
+	if(!transmitting)
+		return;
+
 	// Get GPS position or fake it
 	gps_pos* pos = (gps_pos*)malloc(sizeof(gps_pos));
 #ifndef USE_FAKE_GPS
@@ -62,6 +77,7 @@ int main()
 	flog::info("HIDAPI " HID_API_VERSION_STR);
 
 	TLink::init((char*)SERIAL_PORT);
+	TLink::setRxCallback(&radio_callback);
 #ifndef USE_FAKE_GPS
 	GPS::init();
 #endif

@@ -36,8 +36,6 @@
 #define MAX_PKT_LEN 266
 #define FLAG 0x7E
 
-typedef void (*link_rx_callback_t)(unsigned char* data, int len);
-
 namespace TLink
 {
 
@@ -47,6 +45,8 @@ enum DataType
 {
     Sensor, Computer, Command, Response
 };
+
+typedef void (*link_rx_callback_t)(unsigned char* data, int len, DataType dataType);
 
 struct Frame
 {

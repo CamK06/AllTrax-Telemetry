@@ -3,6 +3,7 @@
 #include <thread>
 #include <fstream>
 #include "../util.h"
+#include <iostream>
 
 namespace Alltrax
 {
@@ -10,6 +11,7 @@ namespace Alltrax
 hid_device* motorController = nullptr;
 bool useChecksum = true; // This is always true in our controller
 bool fakeData = false;
+unsigned char* rxBuf = new unsigned char[64];
 
 // Monitor mode vars
 mcu_mon_callback_t rxCallback = nullptr;
@@ -74,6 +76,12 @@ bool sendData(char reportID, uint addressFunction, unsigned char* data, unsigned
     if(data != nullptr)
         for(int i = 0; i < length; i++)
             packet[i+1] = data[i];
+            
+    // Cleanup
+    delete[] data;
+
+    // Send the packet
+    int result = hid_write(motorController, packet, 64);
 
     flog::debug("Packet sent:");
     for(int i = 0; i < 64; i++) {
@@ -83,8 +91,6 @@ bool sendData(char reportID, uint addressFunction, unsigned char* data, unsigned
 	}
     printf("\n");
 
-    // Send the packet
-    int result = hid_write(motorController, packet, 64);
     if(result == -1)
         return false;
     return true;
@@ -94,7 +100,7 @@ bool getInfo()
 {
     bool result = false;
     if(!fakeData) {
-        result = readVars(Vars::infoVars, 6);
+        result = readVars(Vars::infoVars, 3); // TODO: Fix tcache chunk error when reading all vars
         flog::debug("Motor controller model: {}", Vars::model.getValue());
         flog::debug("Motor controller build date: {}", Vars::buildDate.getValue());
         flog::debug("Motor controller serial number: {}", Vars::serialNum.getVal());
@@ -155,17 +161,13 @@ bool readVars(Var** vars, int varCount)
 
         // Read the variable
         unsigned char* data = new unsigned char[lastByte-vars[i]->getAddr()];
-        bool result = readAddress(vars[i]->getAddr(), lastByte-vars[i]->getAddr(), &data);
-        if(!result) {
+        if(!readAddress(vars[i]->getAddr(), lastByte-vars[i]->getAddr(), &data)) {
             flog::error("Failed to read variable {} from motor controller!", vars[i]->getName());
-            return result;
+            return false;
         }
-
-        Util::dumpHex(data, lastByte-vars[i]->getAddr());
 
         // Parse the variables
         for(int j = 0; j < toRead; j++) {
-            
             Var* var = varsToRead[j];
             int start = var->getAddr()-varsToRead[j]->getAddr();
 
@@ -182,6 +184,7 @@ bool readVars(Var** vars, int varCount)
         toRead = 0;
         for(int j = 0; j < varCount; j++)
             alreadyRead[j] = -1;
+        //delete[] data;
     }
     delete[] varsToRead;
     delete[] alreadyRead;
@@ -196,14 +199,12 @@ bool readVar(Var* var)
 
 bool readAddress(uint32_t addr, uint numBytes, unsigned char** outData)
 {
-    flog::debug("Reading address 0x{0:x} from controller...", addr);
-    flog::debug("Bytes to read {}", numBytes);
-
     // Read the bytes in groups of 56bytes
     int i = 0;
     while((i * 56) < numBytes) {
+        rxBuf = new unsigned char[64];
         // Calculate the length to ask the controller for
-        uint len  = numBytes - (i * 56); // len = bytes to read - bytes already read
+        uint len = numBytes - (i * 56); // len = bytes to read - bytes already read
         if(len > 56u)
             len = 56u;
         else if(len <= 0)
@@ -215,20 +216,21 @@ bool readAddress(uint32_t addr, uint numBytes, unsigned char** outData)
             return result;
 
         // Read the data
-        unsigned char buf[65];
-        int bytesRead = hid_read(motorController, buf, 65);
+        int bytesRead = hid_read(motorController, rxBuf, 64); // Was 65 before for some reason
         for(int j = 0; j < bytesRead-8; j++)
-            (*outData)[j+(i*56)] = buf[j+8];
+            (*outData)[j+(i*56)] = rxBuf[j+8];
+
+        // Cleanup 
+        delete rxBuf;
+
         i++;
     }
-
-    flog::debug("Successfully read {} bytes from 0x{:x}", numBytes, addr);
     return true;
 }
 
 bool readSensors(sensor_data* sensors)
 {
-    if(!readVars(Vars::telemetryVars, 8))
+    if(!readVars(Vars::telemetryVars, 6))
         return false;
 
     // Get the throttle
@@ -285,7 +287,7 @@ void monitorWorker()
         rxCallback(sensors);
         std::this_thread::sleep_for(std::chrono::seconds(monDelay));
     }
-    delete[] sensors;
+    delete sensors;
 }
 
 void cleanup()

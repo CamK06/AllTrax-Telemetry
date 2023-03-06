@@ -64,16 +64,22 @@ void radioRxCallback(int radiofd)
 
     // If the frame requires an ack, send one
     if(frame.needsAck) {
-        unsigned char ack = 0xff;
+        unsigned char ack = 0xff; // TODO: Come up with a better way to do this
         if(sendData(&ack, 1, DataType::Response, false) < 0) {
             flog::error("Failed to send ack!");
             return;
         }
     }
+    bool wasAck = false;
+    if(awaitingAck && frame.type == DataType::Response
+    && frame.data[0] == 0xff) {
+        wasAck = true;
+        awaitingAck = false;
+    }
 
     // Call the rx callback
-    if(rxCB != nullptr)
-        rxCB(frame.data, frame.numBytes);
+    if(rxCB != nullptr && !wasAck)
+        rxCB(frame.data, frame.numBytes, (DataType)frame.type);
 
     // Cleanup for next packet
     delete[] incomingData;
@@ -102,11 +108,31 @@ int sendData(unsigned char* data, int len, DataType dataType, bool requireAck)
     }
 
     // Send the frame
-    if(Radio::sendData(outData, frameLen) < 0)
-        return -1;
-    awaitingAck = requireAck;
+    awaitingAck = true;
+    int attempts = 0;
+    while(awaitingAck) {
+        // Send the data and wait 1s for an ack
+        if(Radio::sendData(outData, frameLen) < 0)
+            return -1;
+        awaitingAck = requireAck;
+        sleep(1+attempts);
+
+        // Check if an ACK was received in the past second
+        if(!awaitingAck)
+            break;
+        
+        // Don't try more than 3 times
+        attempts++;
+        if(attempts > 3) {
+            flog::error("Failed to send packet after 3 attempts; No ACK received.");
+            return -1;
+        }
+    }
 
     delete[] outData;
+    delete[] incomingData;
+    incomingData = nullptr;
+    alreadyRead = 0;
     return 0;
 }
 

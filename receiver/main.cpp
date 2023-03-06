@@ -8,6 +8,7 @@
 #include <nlohmann/json.hpp>
 #include <vector>
 #include <fstream>
+#include <iostream>
 
 #define SERIAL_PORT "/dev/ttyUSB0"
 #define HTTP_IP "0.0.0.0"
@@ -24,6 +25,8 @@ std::vector<int> packetsLost;
 std::string json;
 int totalRx = 0;
 int totalLost = 0;
+int responseLen = 0;
+unsigned char* response = nullptr;
 
 // Battery charge table
 const float chargeTable[11][2] = {
@@ -44,7 +47,14 @@ int main()
 {
 	flog::info("Telemetry Receiver v{}", VERSION);
     TLink::init((char*)SERIAL_PORT, true);
-    TLink::setRxCallback([](unsigned char* data, int len) {
+    TLink::setRxCallback([](unsigned char* data, int len, TLink::DataType type) {
+
+		if(type == TLink::DataType::Response) {
+			response = new unsigned char[len];
+			memcpy(response, data, len);
+			responseLen = len;
+			return;
+		}
 
 		// Decode the packet
 		sensor_data sensorData;
@@ -91,6 +101,7 @@ int main()
     	for(int i = 0; i < sensors.size(); i++) { // Add data to the json file
 
         	// Calculate approximate charge percentage
+			// TODO: Handle 24V
         	if(sensors[i].battVolt < 15) // We are likely running 12V
             	for(int k = 0; k < 11; k++)
                 	if(sensors[i].battVolt <= chargeTable[k][0])
@@ -123,6 +134,10 @@ int main()
 	httplib::Server server;
 	server.Get("/telemetry", [](const httplib::Request& req, httplib::Response& res) {
 		res.set_content(json, "application/json");
+	});
+	server.Get("/toggle", [](const httplib::Request& req, httplib::Response& res) {
+		TLink::sendData((unsigned char*)"TOGGLE", 6, TLink::DataType::Command, true);
+		res.set_content("OK", "text/plain");
 	});
 	server.listen(HTTP_IP, HTTP_PORT);
 

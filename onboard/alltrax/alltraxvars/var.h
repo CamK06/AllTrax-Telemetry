@@ -14,6 +14,7 @@ protected:
     Var(const char* name, VarType type, int arrayLen, uint32_t addr, long minVal, long maxVal, double convertVal, int machineOffset, const char* unitLabel) {
 
         // Set basic info
+        this->_val = nullptr;
         this->_name = (char*)name;
         this->_type = type;
         this->_arrayLen = arrayLen;
@@ -93,8 +94,9 @@ public:
         }
 
         // Replace this->_val with the contents of val
-        if(this->_val != nullptr)
-            delete this->_val;
+        // TODO: Make this work again
+        //if(this->_val != nullptr)
+        //    delete[] this->_val;
         this->_val = new long[length];
         for(int i = 0; i < length; i++)
             this->_val[i] = val[i];
