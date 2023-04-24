@@ -11,7 +11,7 @@ namespace Alltrax
 hid_device* motorController = nullptr;
 bool useChecksum = true; // This is always true in our controller
 bool fakeData = false;
-unsigned char* rxBuf = new unsigned char[64];
+unsigned char rxBuf[64];
 
 // Monitor mode vars
 mcu_mon_callback_t rxCallback = nullptr;
@@ -82,15 +82,6 @@ bool sendData(char reportID, uint addressFunction, unsigned char* data, unsigned
 
     // Send the packet
     int result = hid_write(motorController, packet, 64);
-
-    flog::debug("Packet sent:");
-    for(int i = 0; i < 64; i++) {
-		printf("%02X ", packet[i]);
-		if(i == 15 || i == 31 || i == 47)
-			printf("\n");
-	}
-    printf("\n");
-
     if(result == -1)
         return false;
     return true;
@@ -186,7 +177,7 @@ bool readVars(Var** vars, int varCount)
             alreadyRead[j] = -1;
         //delete[] data;
     }
-    delete[] varsToRead;
+    //delete[] varsToRead;
     delete[] alreadyRead;
     return true;
 }
@@ -202,7 +193,6 @@ bool readAddress(uint32_t addr, uint numBytes, unsigned char** outData)
     // Read the bytes in groups of 56bytes
     int i = 0;
     while((i * 56) < numBytes) {
-        rxBuf = new unsigned char[64];
         // Calculate the length to ask the controller for
         uint len = numBytes - (i * 56); // len = bytes to read - bytes already read
         if(len > 56u)
@@ -219,10 +209,6 @@ bool readAddress(uint32_t addr, uint numBytes, unsigned char** outData)
         int bytesRead = hid_read(motorController, rxBuf, 64); // Was 65 before for some reason
         for(int j = 0; j < bytesRead-8; j++)
             (*outData)[j+(i*56)] = rxBuf[j+8];
-
-        // Cleanup 
-        delete rxBuf;
-
         i++;
     }
     return true;
@@ -232,6 +218,16 @@ bool readSensors(sensor_data* sensors)
 {
     if(!readVars(Vars::telemetryVars, 6))
         return false;
+
+    // TODO: Fix this reading multiple vars
+    readVar(&Vars::battVoltage);
+    readVar(&Vars::throttleLocal);
+    readVar(&Vars::throttlePos);
+    readVar(&Vars::outputAmps);
+    readVar(&Vars::battTemp);
+    readVar(&Vars::mcuTemp);
+    readVar(&Vars::keySwitch);
+    readVar(&Vars::userSwitch);
 
     // Get the throttle
     sensors->throttle = Vars::throttlePos.convertToReal();

@@ -109,7 +109,7 @@ void init(const char* port, radio_rx_callback_t rxCallback, bool client)
 #else
     // Open the serial port
     flog::info("Opening {}...", serialPort);
-    radiofd = open(serialPort, O_RDWR | O_NOCTTY | O_SYNC);
+    radiofd = open(serialPort, O_RDWR | O_NOCTTY | O_NDELAY); // O_SYNC was here
     if(radiofd < 0) {
         flog::error("Failed to open serial port");
         return;
@@ -126,23 +126,14 @@ void init(const char* port, radio_rx_callback_t rxCallback, bool client)
     cfsetospeed(&tty, B57600);
 
     // Set port options; 8 data bits 1 stop bit
-    tty.c_cflag &= ~PARENB;
-    tty.c_cflag &= ~CSTOPB;
-    tty.c_cflag &= ~CSIZE;
+    tty.c_iflag &= ~(IGNBRK | BRKINT | ICRNL | INLCR | PARMRK | INPCK | ISTRIP | IXON);
+    tty.c_oflag &= ~(OCRNL | ONLCR | ONLRET | ONOCR | OFILL | OPOST);
+    tty.c_lflag &= ~(ECHO | ECHONL | ICANON | IEXTEN | ISIG);
+    tty.c_cflag &= ~(CSIZE | PARENB);
     tty.c_cflag |= CS8;
-    tty.c_cflag &= ~CRTSCTS;
-    tty.c_lflag &= ~ICANON;
-    tty.c_lflag &= ~IEXTEN;
-    tty.c_lflag &= ~ECHO;
-    tty.c_lflag &= ~ECHOE; 
-    tty.c_lflag &= ~ECHONL;
-    tty.c_lflag &= ~ISIG;
-    tty.c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL);
-    tty.c_oflag &= ~OPOST;
-    tty.c_oflag &= ~ONLCR;
 
     // Apply options
-    if(tcsetattr(radiofd, TCSANOW, &tty) != 0) {
+    if(tcsetattr(radiofd, TCSAFLUSH, &tty) != 0) {
         flog::error("Failed to set serial port attributes");
         return;
     }

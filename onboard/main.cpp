@@ -10,7 +10,7 @@
 #include <cstring>
 #include <vector>
 
-#define SERIAL_PORT "/dev/ttyUSB0"
+#define SERIAL_PORT "/dev/ttyUSB1"
 
 int monCalls = 0;
 unsigned char* outData = nullptr;

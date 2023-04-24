@@ -9,6 +9,8 @@
 #include <vector>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
+#include <ctime>
 
 #define SERIAL_PORT "/dev/ttyUSB0"
 #define HTTP_IP "0.0.0.0"
@@ -23,25 +25,50 @@ std::vector<float> acceleration;
 std::vector<int> packetsReceived;
 std::vector<int> packetsLost;
 std::string json;
+std::string startJson;
 int totalRx = 0;
 int totalLost = 0;
 int responseLen = 0;
 unsigned char* response = nullptr;
 
 // Battery charge table
-const float chargeTable[11][2] = {
+const float chargeTable[20][2] = {
     {12.7, 100},
+    {12.6, 95},
     {12.5, 90},
+    {12.46, 85},
     {12.42, 80},
+    {12.37, 75},
     {12.32, 70},
-	{12.20, 60},
-	{12.06, 50},
-	{11.90, 40},
-	{11.75, 30},
-	{11.58, 20},
-	{11.31, 10},
-	{10.50, 0}
+    {12.26, 65},
+    {12.20, 60},
+    {12.13, 55},
+    {12.06, 50},
+    {11.98, 45},
+    {11.90, 40},
+    {11.83, 35},
+    {11.75, 30},
+    {11.67, 25},
+    {11.58, 20},
+    {11.45, 15},
+    {11.31, 10},
+    {10.50, 0}
 };
+
+// Thanks, stackoverflow lol
+// https://stackoverflow.com/questions/9527960/how-do-i-construct-an-iso-8601-datetime-in-c
+std::string getTime()
+{
+    timeval curTime;
+    gettimeofday(&curTime, NULL);
+
+    int milli = curTime.tv_usec / 1000;
+    char buf[sizeof "2011-10-08T07:07:09.000Z"];
+    char *p = buf + strftime(buf, sizeof buf, "%FT%T", gmtime(&curTime.tv_sec));
+    sprintf(p, ".%dZ", milli);
+
+    return buf;
+}
 
 int main()
 {
@@ -102,12 +129,10 @@ int main()
 
         	// Calculate approximate charge percentage
 			// TODO: Handle 24V
-        	if(sensors[i].battVolt < 15) // We are likely running 12V
-            	for(int k = 0; k < 11; k++)
-                	if(sensors[i].battVolt <= chargeTable[k][0])
-            	        j["packets"][i]["chargePcnt"] = chargeTable[k][1];
-			else
-				j["packets"][i]["chargePcnt"] = 0;
+        	for(int k = 0; k < 11; k++)
+                if(sensors[i].battVolt <= chargeTable[k][0])
+                    j["packets"][i]["chargePcnt"] = chargeTable[k][1];
+			flog::debug("Battery Voltage: {}V", sensors[i].battVolt);
 
         	j["packets"][i]["time"] = times[i];
         	j["packets"][i]["timeMs"] = times[i]*1000;
@@ -138,6 +163,13 @@ int main()
 	server.Get("/toggle", [](const httplib::Request& req, httplib::Response& res) {
 		TLink::sendData((unsigned char*)"TOGGLE", 6, TLink::DataType::Command, true);
 		res.set_content("OK", "text/plain");
+
+		nlohmann::json j;
+		j[0]["start"] = getTime();
+		startJson = j.dump(4);
+	});
+	server.Get("/start", [](const httplib::Request& req, httplib::Response& res) {
+		res.set_content(startJson, "application/json");
 	});
 	server.listen(HTTP_IP, HTTP_PORT);
 

@@ -40,7 +40,8 @@ void radioRxCallback(int radiofd)
     alreadyRead += len;
 
     // Check the number of bytes
-    if(len < 4 || alreadyRead < incomingData[4]+10)
+    // alreadyRead < 4 *was* len < 4
+    if(alreadyRead < 4 || alreadyRead < incomingData[4]+10)
         return;
 
     // Check for stop flag, give up if not found
@@ -63,6 +64,7 @@ void radioRxCallback(int radiofd)
     }
 
     // If the frame requires an ack, send one
+    // TODO: Add NACK
     if(frame.needsAck) {
         unsigned char ack = 0xff; // TODO: Come up with a better way to do this
         if(sendData(&ack, 1, DataType::Response, false) < 0) {
