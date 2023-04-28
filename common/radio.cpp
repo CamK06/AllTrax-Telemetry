@@ -37,6 +37,7 @@ int sendData(unsigned char* data, int len)
         // If we've failed to send more than 5 times, we've lost connection,
         // listen for another.
         if(txErrors >= 3) {
+            tcflush(radiofd, TCIOFLUSH);
             ::close(radiofd);
             radiofd = -1;
             txErrors = 0;
@@ -140,8 +141,7 @@ void init(const char* port, radio_rx_callback_t rxCallback, bool client)
 #endif
     
     // Set up the receive signal/callback
-    // This MIGHT need to be disabled in the tx program
-    //if(isClient) {
+    
     // Set port to non-blocking RX
     int flags = fcntl(radiofd, F_GETFL, 0);
     fcntl(radiofd, F_SETFL, flags | O_NONBLOCK | O_ASYNC);
@@ -151,7 +151,7 @@ void init(const char* port, radio_rx_callback_t rxCallback, bool client)
         flog::error("Error setting sigio handler");
         return;
     }
-    //}
+    tcflush(radiofd, TCIOFLUSH);
 
     flog::info("Opened port {}", serialPort);
 }
