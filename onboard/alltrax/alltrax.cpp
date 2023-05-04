@@ -76,7 +76,15 @@ bool sendData(char reportID, uint addressFunction, unsigned char* data, unsigned
     if(data != nullptr)
         for(int i = 0; i < length; i++)
             packet[i+1] = data[i];
-            
+
+    flog::debug("Packet sent:");
+    for(int i = 0; i < 64; i++) {
+		printf("%02X ", packet[i]);
+		if(i == 15 || i == 31 || i == 47)
+			printf("\n");
+	}
+    printf("\n");
+
     // Cleanup
     delete[] data;
 
@@ -84,6 +92,7 @@ bool sendData(char reportID, uint addressFunction, unsigned char* data, unsigned
     int result = hid_write(motorController, packet, 64);
     if(result == -1)
         return false;
+    flog::debug("Sent!");
     return true;
 }
 
@@ -177,7 +186,7 @@ bool readVars(Var** vars, int varCount)
             alreadyRead[j] = -1;
         //delete[] data;
     }
-    //delete[] varsToRead;
+    //delete varsToRead;
     delete[] alreadyRead;
     return true;
 }
@@ -190,6 +199,9 @@ bool readVar(Var* var)
 
 bool readAddress(uint32_t addr, uint numBytes, unsigned char** outData)
 {
+    //flog::debug("Reading address 0x{0:x} from controller...", addr);
+    //flog::debug("Bytes to read {}", numBytes);
+
     // Read the bytes in groups of 56bytes
     int i = 0;
     while((i * 56) < numBytes) {
@@ -211,6 +223,7 @@ bool readAddress(uint32_t addr, uint numBytes, unsigned char** outData)
             (*outData)[j+(i*56)] = rxBuf[j+8];
         i++;
     }
+    //flog::debug("Successfully read {} bytes from 0x{:x}", numBytes, addr);
     return true;
 }
 
@@ -219,7 +232,6 @@ bool readSensors(sensor_data* sensors)
     if(!readVars(Vars::telemetryVars, 6))
         return false;
 
-    // TODO: Fix this reading multiple vars
     readVar(&Vars::battVoltage);
     readVar(&Vars::throttleLocal);
     readVar(&Vars::throttlePos);
@@ -238,6 +250,7 @@ bool readSensors(sensor_data* sensors)
 
     // Set the values in the output struct to the read data
     sensors->battVolt = Vars::battVoltage.convertToReal();
+    flog::debug("Battery Voltage: {}", sensors->battVolt);
 	sensors->battCur = Vars::outputAmps.convertToReal() * (double)Vars::throttleLocal.getVal() / 4095.0;
 	sensors->throttle = 100.0 * sensors->throttle / 4095.0;
 	sensors->controlTemp = Vars::mcuTemp.convertToReal();

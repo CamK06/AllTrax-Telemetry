@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include "alltraxvars/var.h"
 #include "alltraxvars/varbool.h"
 #include "alltraxvars/varint8.h"
