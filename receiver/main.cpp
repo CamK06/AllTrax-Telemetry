@@ -29,6 +29,7 @@ std::string startJson;
 int totalRx = 0;
 int totalLost = 0;
 int responseLen = 0;
+int lastCharge = 100;
 unsigned char* response = nullptr;
 
 // Battery charge table
@@ -135,6 +136,15 @@ int main()
                 if(sensors[i].battVolt <= chargeTable[k][0])
                     j["packets"][i]["chargePcnt"] = chargeTable[k][1];
 			//flog::debug("Battery Voltage: {}V", sensors[i].battVolt);
+
+		// Don't calculate charge when throttling, the number will
+		// be inaccurate due to the voltage drop in the motor
+		// NOTE: Motor voltage may be the right value regardless of
+		// the throttle*
+		if(sensors[i].throttle > 0)
+			j["packets"][i]["chargePcnt"] = lastCharge;
+		else
+			lastCharge = j["packets"][i]["chargePcnt"];
 
         	j["packets"][i]["time"] = times[i];
         	j["packets"][i]["timeMs"] = times[i]*1000;
