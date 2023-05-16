@@ -43,6 +43,10 @@ void decodePacket(unsigned char* data, sensor_data* sensors, gps_pos* gps, time_
 
 void formatPacket(sensor_data* sensors, gps_pos* gps, unsigned char** outData)
 {
+    // Initialize all zeros
+    for(int i = 0; i < 64; i++)
+        (*outData)[i] = 0;
+
     // Header
     (*outData)[0] = SEPARATOR_A;
     (*outData)[1] = SEPARATOR_B;

@@ -73,15 +73,15 @@ std::string getTime()
 int main()
 {
 	flog::info("Telemetry Receiver v{}", VERSION);
-    TLink::init((char*)SERIAL_PORT, true);
-    TLink::setRxCallback([](unsigned char* data, int len, TLink::DataType type) {
+    TLink::init((char*)SERIAL_PORT, false);
+    TLink::setRxCallback([](unsigned char* data, int len, int type) {
 
-		if(type == TLink::DataType::Response) {
-			response = new unsigned char[len];
-			memcpy(response, data, len);
-			responseLen = len;
-			return;
-		}
+		//if(type == TLink::DataType::Data) {
+		//	response = new unsigned char[len];
+		//	memcpy(response, data, len);
+		//	responseLen = len;
+		//	return;
+		//}
 
 		// Decode the packet
 		sensor_data sensorData;
@@ -103,6 +103,7 @@ int main()
 		flog::debug("Power: {0:.1f}W", sensorData.battCur*sensorData.battVolt);
 		flog::debug("Velocity: {0:.1f}m/s", gps.velocity);
 		flog::debug("Key: {} Eco: {}", sensorData.pwrSwitch ? "ON" : "OFF", sensorData.userSwitch ? "ON" : "OFF");
+		flog::debug("Onboard Time: {}", timestamp);
 
 		// Save the data
 		sensors.push_back(sensorData);
@@ -112,7 +113,8 @@ int main()
 		packetsReceived.push_back(++totalRx);
 		
 		// Calculate packet loss
-		packetsLost.push_back(TLink::framesLost);
+		//packetsLost.push_back(-1);
+		packetsLost.push_back(TLink::rxFails);
 
 		// Calculate acceleration
 		if(positions.size() > 1) {
@@ -132,7 +134,7 @@ int main()
         	for(int k = 0; k < 11; k++)
                 if(sensors[i].battVolt <= chargeTable[k][0])
                     j["packets"][i]["chargePcnt"] = chargeTable[k][1];
-			flog::debug("Battery Voltage: {}V", sensors[i].battVolt);
+			//flog::debug("Battery Voltage: {}V", sensors[i].battVolt);
 
         	j["packets"][i]["time"] = times[i];
         	j["packets"][i]["timeMs"] = times[i]*1000;
@@ -174,6 +176,6 @@ int main()
 	server.listen(HTTP_IP, HTTP_PORT);
 
 	// Cleanup
-	TLink::cleanup();
+	//TLink::cleanup();
 	return 0;
 }

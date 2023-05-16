@@ -9,6 +9,6 @@
 #define TX_RATE 1 // Number of seconds between each tx
 		  
 // Debug things
-//#define USE_FAKE_CONTROLLER
+#define USE_FAKE_CONTROLLER
 #define USE_FAKE_GPS
 //#define USE_IP
