@@ -13,7 +13,7 @@ int init()
     gpsRec = new gpsmm("localhost", DEFAULT_GPSD_PORT);
     if(gpsRec->stream(WATCH_ENABLE | WATCH_JSON) == nullptr) {
         flog::error("GPSD: No GPSD running.");
-        return false;;
+        return false;
     }
     return true;
 }

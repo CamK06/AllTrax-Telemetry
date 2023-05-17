@@ -119,7 +119,7 @@ int main()
 
 		// Calculate acceleration
 		if(positions.size() > 1) {
-			float accel = fabs(positions[positions.size()-1].velocity - positions[positions.size()-2].velocity);
+			float accel = fabs((positions[positions.size()-1].velocity - positions[positions.size()-2].velocity)/(times[times.size()-1]-times[times.size()-2])); // dV/dT
 			acceleration.push_back(accel);
 			flog::debug("Acceleration: {0:.1f}m/s^2", accel);
 		}
@@ -155,11 +155,11 @@ int main()
         	j["packets"][i]["power"] = sensors[i].battCur*sensors[i].battVolt;
         	j["packets"][i]["lat"] = positions[i].latitude;
         	j["packets"][i]["long"] = positions[i].longitude;
-			j["packets"][i]["velocity"] = positions[i].velocity*3.6;
+			j["packets"][i]["velocity"] = positions[i].velocity*3.6; // km/h
 			j["packets"][i]["rxCount"] = packetsReceived[i];
 			j["packets"][i]["lostCount"] = packetsLost[i];
 			j["packets"][i]["index"] = packetsReceived[i] + packetsLost[i];
-			j["packets"][i]["acceleration"] = acceleration[i];
+			j["packets"][i]["acceleration"] = acceleration[i]; // m/s^2 TODO: Convert to km/h
 			j["packets"][i]["userSw"] = sensors[i].userSwitch ? 1 : 0;
 			j["packets"][i]["keySw"] = sensors[i].pwrSwitch ? 1 : 0;
     	}
