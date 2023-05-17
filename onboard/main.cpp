@@ -20,6 +20,7 @@ unsigned char* outData = nullptr;
 bool transmitting = false;
 std::string localDataFile;
 std::ofstream localData;
+bool openedData = false; // this is super dumb
 
 void radio_callback(unsigned char* data, int len, int type)
 {
@@ -60,6 +61,11 @@ void monitor_callback(sensor_data* sensors)
 #endif
 
 	// Write the data to a file
+	localData.open(localDataFile, std::ofstream::app);
+	if(!openedData) {
+		localData << "voltage,current,speed,throttle,powerSw,ecoSw,controlTemp,battTemp,lat,long,time" << std::endl;
+		openedData = true;
+	}
 	localData << sensors->battVolt << ',' << sensors->battCur << ',' << pos->velocity << ',' << sensors->throttle << ',' << sensors->pwrSwitch << ',' << sensors->userSwitch << ',' << sensors->controlTemp << ',' << sensors->battTemp << ',' << pos->latitude << ',' << pos->longitude << ',' << time(nullptr) << std::endl;	
 
 	// If we don't have any data, create a new buffer by copying the first packet PKT_BURST times
@@ -85,7 +91,7 @@ void monitor_callback(sensor_data* sensors)
 	// Send past packet burst every 3 seconds
 	if(++monCalls == TX_RATE) {
 		//Util::dumpHex(outData, PKT_BURST*PKT_LEN);
-		TLink::sendData(outData, PKT_BURST*PKT_LEN, TLink::DataType::Data, false);
+		TLink::sendData(outData, PKT_BURST*PKT_LEN, TLink::DataType::Data, true);
 		monCalls = 0;
 	}
 	delete pos;
@@ -116,8 +122,6 @@ int main()
 	auto tm = *std::localtime(&t);
 	str << "telemetry-" << std::put_time(&tm, "%d-%m-%y %H-%M-%S") << ".csv";
 	localDataFile = str.str(); 
-	localData.open(localDataFile, std::ofstream::app);
-	localData << "voltage,current,speed,throttle,powerSw,ecoSw,controlTemp,battTemp,lat,long,time" << std::endl;
 
 	// Begin monitor mode
 	Alltrax::startMonitor(PKT_RATE);

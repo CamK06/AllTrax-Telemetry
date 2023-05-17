@@ -11,4 +11,4 @@
 // Debug things
 #define USE_FAKE_CONTROLLER
 #define USE_FAKE_GPS
-#define USE_IP
+//#define USE_IP
