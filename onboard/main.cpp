@@ -54,6 +54,11 @@ void monitor_callback(sensor_data* sensors)
 	gps_pos* pos = (gps_pos*)malloc(sizeof(gps_pos));
 #ifndef USE_FAKE_GPS
 	pos = GPS::getPosition();
+	if(pos == nullptr) {
+		pos->latitude = 0;
+		pos->longitude = 0;
+		pos->velocity = 0;
+	}
 #else 
  	pos->latitude = sin(random())*85;
  	pos->longitude = cos(random())*80;
