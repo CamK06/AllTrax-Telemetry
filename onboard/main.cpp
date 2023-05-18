@@ -18,9 +18,11 @@
 int monCalls = 0;
 unsigned char* outData = nullptr;
 bool transmitting = false;
+#ifdef WRITE_LOCAL
 std::string localDataFile;
 std::ofstream localData;
 bool openedData = false; // this is super dumb
+#endif
 
 void radio_callback(unsigned char* data, int len, int type)
 {
@@ -30,19 +32,6 @@ void radio_callback(unsigned char* data, int len, int type)
 	// Decode the command
 	if(memcmp(data, "TOGGLE", len) == 0)
 		transmitting = !transmitting;
-
-	// Create a break in the telemetry data, in a new file
-	// For use between tests
-	if(memcmp(data, "BREAK", len) == 0) {
-		localData.close();
-		std::ostringstream str;
-		auto t = std::time(nullptr);
-		auto tm = *std::localtime(&t);
-		str << "telemetry-" << std::put_time(&tm, "%d-%m-%y %H-%M-%S") << ".csv";
-		localDataFile = str.str();
-		localData.open(localDataFile, std::ofstream::app);
-		localData << "voltage,current,speed,throttle,powerSw,ecoSw,controlTemp,battTemp,lat,long,time" << std::endl;
-	}
 }
 
 void monitor_callback(sensor_data* sensors)
@@ -51,10 +40,11 @@ void monitor_callback(sensor_data* sensors)
 		return;
 
 	// Get GPS position or fake it
-	gps_pos* pos = (gps_pos*)malloc(sizeof(gps_pos));
+	gps_pos* pos = nullptr;
 #ifndef USE_FAKE_GPS
 	pos = GPS::getPosition();
 	if(pos == nullptr) {
+		pos = new gps_pos;
 		pos->latitude = 0;
 		pos->longitude = 0;
 		pos->velocity = 0;
@@ -64,7 +54,7 @@ void monitor_callback(sensor_data* sensors)
  	pos->longitude = cos(random())*80;
  	pos->velocity = fabs((sin(random()*10)*cos(random()*20))*35);
 #endif
-
+#ifdef WRITE_LOCAL
 	// Write the data to a file
 	localData.open(localDataFile, std::ofstream::app);
 	if(!openedData) {
@@ -72,7 +62,8 @@ void monitor_callback(sensor_data* sensors)
 		openedData = true;
 	}
 	localData << sensors->battVolt << ',' << sensors->battCur << ',' << pos->velocity << ',' << sensors->throttle << ',' << sensors->pwrSwitch << ',' << sensors->userSwitch << ',' << sensors->controlTemp << ',' << sensors->battTemp << ',' << pos->latitude << ',' << pos->longitude << ',' << time(nullptr) << std::endl;	
-
+	localData.close();
+#endif
 	// If we don't have any data, create a new buffer by copying the first packet PKT_BURST times
 	if(outData == nullptr) {
 		outData = new unsigned char[PKT_BURST*PKT_LEN];
@@ -99,7 +90,6 @@ void monitor_callback(sensor_data* sensors)
 		TLink::sendData(outData, PKT_BURST*PKT_LEN, TLink::DataType::Data, true);
 		monCalls = 0;
 	}
-	delete pos;
 }
 
 int main()
@@ -121,12 +111,14 @@ int main()
 #endif
 		return -1;
 
+#ifdef WRITE_LOCAL
 	// Create the file to write local data to
 	std::ostringstream str;
 	auto t = std::time(nullptr);
 	auto tm = *std::localtime(&t);
 	str << "telemetry-" << std::put_time(&tm, "%d-%m-%y %H-%M-%S") << ".csv";
 	localDataFile = str.str(); 
+#endif
 
 	// Begin monitor mode
 	Alltrax::startMonitor(PKT_RATE);

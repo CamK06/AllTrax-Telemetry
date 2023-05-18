@@ -7,8 +7,9 @@
 #define PKT_LEN 64 // Length of one packet (NOT TLink frame). This is fixed
 #define PKT_BURST 1 // Number of packets to send during each tx
 #define TX_RATE 1 // Number of seconds between each tx
-		  
+//#define WRITE_LOCAL // Whether or not to write a local copy of data
+
 // Debug things
 #define USE_FAKE_CONTROLLER
-#define USE_FAKE_GPS
-//#define USE_IP
+//#define USE_FAKE_GPS
+#define USE_IP
