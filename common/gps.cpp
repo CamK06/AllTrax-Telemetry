@@ -30,6 +30,11 @@ gps_pos* getPosition()
         flog::error("GPSD: No data from GPSD.");
         return pos;
     }
+    if(((gpsData = gpsRec->read()) == nullptr) || (gpsData->fix.mode < MODE_2D)) {
+        flog::error("GPSD: No fix.");
+        return pos;
+    }
+
     // Verify the incoming data, if invalid, return last data
     if(gpsData->fix.latitude <= 0)
         return pos;
