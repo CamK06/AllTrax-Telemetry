@@ -5,3 +5,4 @@
 * Make everything more stable from cold boot on the Pi3
 * Fix bulk variable reading in alltrax.cpp
 * Test the receiver setup in a Windows environment (grafana and actual receiver program)
+* Add motor controller commands/programming (?)

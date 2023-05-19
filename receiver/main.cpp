@@ -130,22 +130,17 @@ int main()
     	nlohmann::json j;
     	for(int i = 0; i < sensors.size(); i++) { // Add data to the json file
 
-        	// Calculate approximate charge percentage
-			// TODO: Handle 24V
-        	for(int k = 0; k < 11; k++)
-                if(sensors[i].battVolt <= chargeTable[k][0])
-                    j["packets"][i]["chargePcnt"] = chargeTable[k][1];
-			//flog::debug("Battery Voltage: {}V", sensors[i].battVolt);
+        	// Calculate approximate charge percentage, excluding times when throttle
+			// is applied because otherwise the voltage drop makes it inaccurate
+			if(sensors[i].throttle <= 0) { 
+        		for(int k = 0; k < 11; k++)
+            	    if(sensors[i].battVolt <= chargeTable[k][0])
+            	        lastCharge = chargeTable[k][1];
+					else // TODO: Handle 24V here, right now 24V will always show 100%
+						lastCharge = 100;
+			}
 
-		// Don't calculate charge when throttling, the number will
-		// be inaccurate due to the voltage drop in the motor
-		// NOTE: Motor voltage may be the right value regardless of
-		// the throttle*
-		if(sensors[i].throttle > 0)
 			j["packets"][i]["chargePcnt"] = lastCharge;
-		else
-			lastCharge = j["packets"][i]["chargePcnt"];
-
         	j["packets"][i]["time"] = times[i];
         	j["packets"][i]["timeMs"] = times[i]*1000;
         	j["packets"][i]["throttle"] = sensors[i].throttle;

@@ -125,7 +125,6 @@ int main()
 	while(Alltrax::monThreadRunning);
 
 	Alltrax::cleanup();
-	//TLink::cleanup();
 #ifndef USE_FAKE_GPS
 	GPS::close();
 #endif
