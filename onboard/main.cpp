@@ -55,10 +55,10 @@ void monitor_callback(sensor_data* sensors)
 	// Write the data to a file
 	localData.open(localDataFile, std::ofstream::app);
 	if(!openedData) {
-		localData << "voltage,current,speed,throttle,powerSw,ecoSw,controlTemp,battTemp,lat,long,time" << std::endl;
+		localData << "voltage,current,speed,throttle,powerSw,ecoSw,controlTemp,battTemp,lat,long,time,gpstime" << std::endl;
 		openedData = true;
 	}
-	localData << sensors->battVolt << ',' << sensors->battCur << ',' << pos->velocity << ',' << sensors->throttle << ',' << sensors->pwrSwitch << ',' << sensors->userSwitch << ',' << sensors->controlTemp << ',' << sensors->battTemp << ',' << pos->latitude << ',' << pos->longitude << ',' << time(nullptr) << std::endl;	
+	localData << sensors->battVolt << ',' << sensors->battCur << ',' << pos->velocity << ',' << sensors->throttle << ',' << sensors->pwrSwitch << ',' << sensors->userSwitch << ',' << sensors->controlTemp << ',' << sensors->battTemp << ',' << pos->latitude << ',' << pos->longitude << ',' << time(nullptr) << ',' << pos->time.tv_sec << std::endl;	
 	localData.close();
 #endif
 #ifdef USE_RADIO

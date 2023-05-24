@@ -15,6 +15,7 @@ int init()
         flog::error("GPSD: No GPSD running.");
         return false;
     }
+
     return true;
 }
 
@@ -24,6 +25,7 @@ gps_pos* getPosition()
     // It might be worth creating a for loop which reads from gps repeatedly
     // until the read data's GPS timestamp is within x seconds of the current time (5?)
     // Only then do we know the data is accurate
+    // It also might be worth using the raw C API instead of gpsmm
 
     // Attempt to read GPS data
     if(!gpsRec->waiting(500000)) {
@@ -31,7 +33,7 @@ gps_pos* getPosition()
         return pos;
     }
     struct gps_data_t* gpsData;
-    if((gpsData = gpsRec->read()) == nullptr) {
+    if((gpsRec->read()) == nullptr) {
         flog::error("GPSD: No data from GPSD.");
         return pos;
     }
@@ -50,6 +52,7 @@ gps_pos* getPosition()
     pos->latitude = gpsData->fix.latitude;
     pos->longitude = gpsData->fix.longitude;
     pos->velocity = gpsData->fix.speed;
+    pos->time = gpsData->fix.time;
     return pos;
 }
 

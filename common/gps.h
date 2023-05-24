@@ -7,6 +7,7 @@ struct gps_pos
     double latitude;
     double longitude;
     double velocity;
+    timespec_t time;
 };
 
 namespace GPS
