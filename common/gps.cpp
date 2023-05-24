@@ -11,7 +11,7 @@ int init()
 {
     // Connect to gpsd
     gpsRec = new gpsmm("localhost", DEFAULT_GPSD_PORT);
-    if(gpsRec->stream(WATCH_ENABLE | WATCH_JSON) == nullptr) {
+    if(gpsRec->stream(WATCH_ENABLE) == nullptr) {
         flog::error("GPSD: No GPSD running.");
         return false;
     }
@@ -20,29 +20,29 @@ int init()
 
 gps_pos* getPosition()
 {
+    // NOTE:
+    // It might be worth creating a for loop which reads from gps repeatedly
+    // until the read data's GPS timestamp is within x seconds of the current time (5?)
+    // Only then do we know the data is accurate
+
     // Attempt to read GPS data
-    if(!gpsRec->waiting(5000)) {
+    if(!gpsRec->waiting(500000)) {
         flog::error("GPSD: No data from GPSD. Timeout.");
-        pos->velocity = -1; // This is to make it clear that the data is invalid, while still returning the most recent *position*
         return pos;
     }
     struct gps_data_t* gpsData;
     if((gpsData = gpsRec->read()) == nullptr) {
         flog::error("GPSD: No data from GPSD.");
-        pos->velocity = -1;
         return pos;
     }
     if(((gpsData = gpsRec->read()) == nullptr) || (gpsData->fix.mode < MODE_2D)) {
         flog::error("GPSD: No fix.");
-        pos->velocity = -1;
         return pos;
     }
 
     // Verify the incoming data, if invalid, return last data
-    if(gpsData->fix.latitude <= 0) {
-        pos->velocity = -1;
+    if(gpsData->fix.latitude <= 0)
         return pos;
-    }
 
     // Return the position
     if(pos == nullptr)
