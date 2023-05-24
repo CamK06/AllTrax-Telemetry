@@ -23,21 +23,26 @@ gps_pos* getPosition()
     // Attempt to read GPS data
     if(!gpsRec->waiting(5000)) {
         flog::error("GPSD: No data from GPSD. Timeout.");
+        pos->velocity = -1; // This is to make it clear that the data is invalid, while still returning the most recent *position*
         return pos;
     }
     struct gps_data_t* gpsData;
     if((gpsData = gpsRec->read()) == nullptr) {
         flog::error("GPSD: No data from GPSD.");
+        pos->velocity = -1;
         return pos;
     }
     if(((gpsData = gpsRec->read()) == nullptr) || (gpsData->fix.mode < MODE_2D)) {
         flog::error("GPSD: No fix.");
+        pos->velocity = -1;
         return pos;
     }
 
     // Verify the incoming data, if invalid, return last data
-    if(gpsData->fix.latitude <= 0)
+    if(gpsData->fix.latitude <= 0) {
+        pos->velocity = -1;
         return pos;
+    }
 
     // Return the position
     if(pos == nullptr)

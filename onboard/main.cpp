@@ -36,9 +36,6 @@ void radio_callback(unsigned char* data, int len, int type)
 
 void monitor_callback(sensor_data* sensors)
 {
-	if(!transmitting)
-		return;
-
 	// Get GPS position or fake it
 	gps_pos* pos = nullptr;
 #ifndef USE_FAKE_GPS
@@ -64,6 +61,10 @@ void monitor_callback(sensor_data* sensors)
 	localData << sensors->battVolt << ',' << sensors->battCur << ',' << pos->velocity << ',' << sensors->throttle << ',' << sensors->pwrSwitch << ',' << sensors->userSwitch << ',' << sensors->controlTemp << ',' << sensors->battTemp << ',' << pos->latitude << ',' << pos->longitude << ',' << time(nullptr) << std::endl;	
 	localData.close();
 #endif
+#ifdef USE_RADIO
+	if(!transmitting)
+		return;
+
 	// If we don't have any data, create a new buffer by copying the first packet PKT_BURST times
 	if(outData == nullptr) {
 		outData = new unsigned char[PKT_BURST*PKT_LEN];
@@ -90,6 +91,7 @@ void monitor_callback(sensor_data* sensors)
 		TLink::sendData(outData, PKT_BURST*PKT_LEN, TLink::DataType::Data, true);
 		monCalls = 0;
 	}
+#endif
 }
 
 int main()
@@ -97,8 +99,10 @@ int main()
 	flog::info("AllTrax SR Telemetry TX " VERSION);
 	flog::info("HIDAPI " HID_API_VERSION_STR);
 
+#ifdef USE_RADIO
 	TLink::init((char*)SERIAL_PORT, true);
 	TLink::setRxCallback(&radio_callback);
+#endif
 #ifndef USE_FAKE_GPS
 	GPS::init();
 #endif

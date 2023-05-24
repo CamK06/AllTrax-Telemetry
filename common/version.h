@@ -8,6 +8,7 @@
 #define PKT_BURST 1 // Number of packets to send during each tx
 #define TX_RATE 1 // Number of seconds between each tx
 #define WRITE_LOCAL // Whether or not to write a local copy of data
+#define USE_RADIO // When disabled, only writes to local file
 
 // Debug things
 //#define USE_FAKE_CONTROLLER
